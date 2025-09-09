@@ -36,22 +36,64 @@ uvicorn main:app --reload
 ```
 
 ### Docker Deployment
+
+#### 🚀 배포 가이드
+
+**1. 저장소 클론 및 이동**
 ```bash
-# Build and run with Docker Compose
+git clone https://github.com/kimyeonghoon/JAPAN_TRAVEL_EXPENSE.git
+cd JAPAN_TRAVEL_EXPENSE
+```
+
+**2. Docker Compose로 배포**
+```bash
+# 이미지 빌드 후 실행 (최초 실행)
 docker-compose up --build
 
-# Run in background
+# 백그라운드에서 실행
 docker-compose up -d
 
-# Stop services
+# 서비스 중지
 docker-compose down
 
-# View logs
+# 로그 확인
 docker-compose logs -f
 
-# Rebuild after changes
+# 변경사항 반영하여 재배포
 docker-compose up --build --force-recreate
 ```
+
+**3. 서비스 관리**
+```bash
+# 컨테이너 상태 확인
+docker-compose ps
+
+# 헬스체크 상태 확인
+docker ps --format "table {{.Names}}\t{{.Status}}"
+
+# 컨테이너 내부 접근
+docker exec -it japan-travel-expense bash
+
+# 데이터베이스 직접 접근
+docker exec -it japan-travel-expense sqlite3 /app/data/japan_travel_expenses.db
+```
+
+**4. 데이터 백업**
+```bash
+# SQLite 데이터베이스 백업
+cp ./data/japan_travel_expenses.db ./backup/japan_travel_expenses_$(date +%Y%m%d_%H%M%S).db
+```
+
+#### 📋 배포 전 체크리스트
+- [ ] Docker 및 Docker Compose 설치 확인
+- [ ] 포트 8000번 사용 가능 여부 확인
+- [ ] 충분한 디스크 공간 확보 (최소 500MB)
+- [ ] 방화벽 설정 (필요시 8000번 포트 개방)
+
+#### 🔧 문제해결
+- **포트 충돌**: `docker-compose.yml`에서 포트 변경 (예: 8080:8000)
+- **권한 문제**: `sudo` 권한으로 Docker 명령어 실행
+- **헬스체크 실패**: 로그 확인 후 `/api/health` 엔드포인트 접근 테스트
 
 ### Common Git Commands
 ```bash

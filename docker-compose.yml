@@ -1,23 +1,49 @@
+# 일본 여행 경비 추적기 Docker Compose 설정
+# Docker Compose 버전 3.8 사용 (최신 기능 지원)
 version: '3.8'
 
+# 서비스 정의
 services:
+  # 웹 애플리케이션 서비스 (FastAPI + SQLite)
   web:
+    # 현재 디렉토리의 Dockerfile을 사용하여 이미지 빌드
     build: .
+    
+    # 컨테이너 이름을 명시적으로 지정 (관리 편의성)
     container_name: japan-travel-expense
+    
+    # 포트 매핑: 호스트의 8000번 포트를 컨테이너의 8000번 포트에 연결
+    # 외부에서 http://localhost:8000 으로 접근 가능
     ports:
       - "8000:8000"
+    
+    # 볼륨 마운트: 데이터 영속성 보장
+    # 호스트의 ./data 디렉토리를 컨테이너의 /app/data에 마운트
+    # 컨테이너가 재시작되어도 SQLite 데이터베이스 파일이 유지됨
     volumes:
       - ./data:/app/data
+    
+    # 환경 변수 설정
+    # SQLite 데이터베이스 파일의 경로를 볼륨 마운트된 위치로 지정
     environment:
       - DATABASE_URL=sqlite:///./data/japan_travel_expenses.db
+    
+    # 컨테이너 재시작 정책
+    # 수동으로 중지하지 않는 한 항상 재시작 (서버 재부팅 시에도 자동 시작)
     restart: unless-stopped
+    
+    # 헬스체크 설정 (컨테이너 상태 모니터링)
     healthcheck:
+      # /api/health 엔드포인트로 서비스 상태 확인
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      interval: 30s      # 30초마다 체크
+      timeout: 10s       # 10초 내에 응답 없으면 실패로 판정
+      retries: 3         # 3번 연속 실패시 unhealthy 상태로 변경
+      start_period: 40s  # 컨테이너 시작 후 40초 후부터 헬스체크 시작
 
+# 네트워크 설정
 networks:
+  # 기본 네트워크에 사용자 정의 이름 지정
+  # 같은 네트워크의 다른 서비스와 통신 가능 (향후 확장성 고려)
   default:
     name: japan-travel-network

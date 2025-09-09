@@ -14,6 +14,7 @@ class Expense(Base):
     category = Column(String(50), nullable=False)
     description = Column(String(200), default="")
     date = Column(String(10), nullable=False)  # YYYY-MM-DD format
+    payment_method = Column(String(20), nullable=False, default="현금")  # 현금, 체크카드, 신용카드, 교통카드
     timestamp = Column(DateTime, default=datetime.utcnow)
     
     def to_dict(self):
@@ -23,6 +24,7 @@ class Expense(Base):
             "category": self.category,
             "description": self.description,
             "date": self.date,
+            "payment_method": self.payment_method,
             "timestamp": self.timestamp.strftime("%Y-%m-%d %H:%M:%S") if self.timestamp else None
         }
 

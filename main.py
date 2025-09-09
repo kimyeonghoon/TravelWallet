@@ -23,6 +23,7 @@ class ExpenseCreate(BaseModel):
     amount: float
     category: str
     description: str = ""
+    payment_method: str = "현금"
 
 class ExpenseResponse(BaseModel):
     id: int
@@ -30,6 +31,7 @@ class ExpenseResponse(BaseModel):
     category: str
     description: str
     date: str
+    payment_method: str
     timestamp: str
 
 class ExpenseUpdate(BaseModel):
@@ -38,6 +40,7 @@ class ExpenseUpdate(BaseModel):
     description: Optional[str] = None
     date: Optional[str] = None
     time: Optional[str] = None
+    payment_method: Optional[str] = None
 
 class SummaryResponse(BaseModel):
     total_expense: float
@@ -59,7 +62,8 @@ async def create_expense(expense: ExpenseCreate, db: Session = Depends(get_db)):
             db=db, 
             amount=expense.amount, 
             category=expense.category, 
-            description=expense.description
+            description=expense.description,
+            payment_method=expense.payment_method
         )
         return ExpenseResponse(**new_expense.to_dict())
     except Exception as e:
@@ -81,7 +85,8 @@ async def update_expense(expense_id: int, expense_update: ExpenseUpdate, db: Ses
         category=expense_update.category,
         description=expense_update.description,
         expense_date=expense_update.date,
-        expense_time=expense_update.time
+        expense_time=expense_update.time,
+        payment_method=expense_update.payment_method
     )
     if not updated_expense:
         raise HTTPException(status_code=404, detail="Expense not found")

@@ -8,13 +8,14 @@ class ExpenseService:
     """Service class for expense database operations."""
     
     @staticmethod
-    def create_expense(db: Session, amount: float, category: str, description: str = "") -> Expense:
+    def create_expense(db: Session, amount: float, category: str, description: str = "", payment_method: str = "현금") -> Expense:
         """Create a new expense record."""
         expense = Expense(
             amount=amount,
             category=category,
             description=description,
             date=date.today().strftime("%Y-%m-%d"),
+            payment_method=payment_method,
             timestamp=datetime.utcnow()
         )
         db.add(expense)
@@ -68,7 +69,8 @@ class ExpenseService:
     @staticmethod
     def update_expense(db: Session, expense_id: int, amount: float = None, 
                       category: str = None, description: str = None, 
-                      expense_date: str = None, expense_time: str = None) -> Optional[Expense]:
+                      expense_date: str = None, expense_time: str = None,
+                      payment_method: str = None) -> Optional[Expense]:
         """Update an expense by ID."""
         expense = db.query(Expense).filter(Expense.id == expense_id).first()
         if expense:
@@ -80,6 +82,8 @@ class ExpenseService:
                 expense.description = description
             if expense_date is not None:
                 expense.date = expense_date
+            if payment_method is not None:
+                expense.payment_method = payment_method
             if expense_time is not None:
                 # Parse time and combine with existing date or new date
                 try:

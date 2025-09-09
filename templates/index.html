@@ -40,27 +40,13 @@
         <div class="container mt-4">
             <div class="row">
                 <!-- Summary Cards -->
-                <div class="col-12 col-md-6 col-lg-3 mb-3">
-                    <div class="card text-white bg-success">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">총 예산</h6>
-                                    <h4 id="total-budget">¥0</h4>
-                                </div>
-                                <i class="fas fa-wallet fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                <div class="col-12 col-md-6 mb-3">
                     <div class="card text-white bg-danger">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6 class="card-title">총 지출</h6>
-                                    <h4 id="total-expense">¥0</h4>
+                                    <h4 id="total-expense">₩0</h4>
                                 </div>
                                 <i class="fas fa-credit-card fa-2x"></i>
                             </div>
@@ -68,27 +54,13 @@
                     </div>
                 </div>
                 
-                <div class="col-12 col-md-6 col-lg-3 mb-3">
-                    <div class="card text-white bg-info">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">남은 예산</h6>
-                                    <h4 id="remaining-budget">¥0</h4>
-                                </div>
-                                <i class="fas fa-piggy-bank fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                <div class="col-12 col-md-6 mb-3">
                     <div class="card text-white bg-warning">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6 class="card-title">오늘 지출</h6>
-                                    <h4 id="today-expense">¥0</h4>
+                                    <h4 id="today-expense">₩0</h4>
                                 </div>
                                 <i class="fas fa-calendar-day fa-2x"></i>
                             </div>
@@ -108,7 +80,7 @@
                             <form id="expense-form">
                                 <div class="row">
                                     <div class="col-12 col-md-6 mb-3">
-                                        <label for="amount" class="form-label">금액 (¥)</label>
+                                        <label for="amount" class="form-label">금액 (₩)</label>
                                         <input type="number" class="form-control" id="amount" required>
                                     </div>
                                     <div class="col-12 col-md-6 mb-3">
@@ -118,8 +90,7 @@
                                             <option value="food">식비</option>
                                             <option value="transport">교통비</option>
                                             <option value="accommodation">숙박비</option>
-                                            <option value="shopping">쇼핑</option>
-                                            <option value="entertainment">오락</option>
+                                            <option value="admission">입장료</option>
                                             <option value="other">기타</option>
                                         </select>
                                     </div>

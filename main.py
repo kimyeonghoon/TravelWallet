@@ -33,9 +33,7 @@ class ExpenseResponse(BaseModel):
     timestamp: str
 
 class SummaryResponse(BaseModel):
-    total_budget: float
     total_expense: float
-    remaining_budget: float
     today_expense: float
 
 @app.get("/", response_class=HTMLResponse)
@@ -77,15 +75,11 @@ async def delete_expense(expense_id: int, db: Session = Depends(get_db)):
 @app.get("/api/summary", response_model=SummaryResponse)
 async def get_summary(db: Session = Depends(get_db)):
     """Get expense summary."""
-    total_budget = 100000.0  # Default budget ¥100,000
     total_expense = ExpenseService.get_total_expenses(db)
-    remaining_budget = total_budget - total_expense
     today_expense = ExpenseService.get_today_expenses_total(db)
     
     return SummaryResponse(
-        total_budget=total_budget,
         total_expense=total_expense,
-        remaining_budget=remaining_budget,
         today_expense=today_expense
     )
 

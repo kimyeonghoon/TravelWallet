@@ -81,7 +81,7 @@ $(document).ready(function() {
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <h6 class="mb-0">${getCategoryName(expense.category)}</h6>
-                                        <span class="badge bg-primary">¥${expense.amount.toLocaleString()}</span>
+                                        <span class="badge bg-primary">₩${expense.amount.toLocaleString()}</span>
                                     </div>
                                     <p class="mb-1 text-muted">${expense.description || '설명 없음'}</p>
                                     <small class="text-muted">
@@ -132,20 +132,8 @@ $(document).ready(function() {
             url: '/api/summary',
             method: 'GET',
             success: function(summary) {
-                $('#total-budget').text(`¥${summary.total_budget.toLocaleString()}`);
-                $('#total-expense').text(`¥${summary.total_expense.toLocaleString()}`);
-                $('#remaining-budget').text(`¥${summary.remaining_budget.toLocaleString()}`);
-                $('#today-expense').text(`¥${summary.today_expense.toLocaleString()}`);
-                
-                // Update remaining budget card color
-                const remainingCard = $('#remaining-budget').closest('.card');
-                if (summary.remaining_budget < 0) {
-                    remainingCard.removeClass('bg-info bg-warning').addClass('bg-danger');
-                } else if (summary.remaining_budget < summary.total_budget * 0.2) {
-                    remainingCard.removeClass('bg-info bg-danger').addClass('bg-warning');
-                } else {
-                    remainingCard.removeClass('bg-danger bg-warning').addClass('bg-info');
-                }
+                $('#total-expense').text(`₩${summary.total_expense.toLocaleString()}`);
+                $('#today-expense').text(`₩${summary.today_expense.toLocaleString()}`);
             },
             error: function(xhr, status, error) {
                 console.error('Error loading summary:', error);
@@ -159,8 +147,7 @@ $(document).ready(function() {
             food: '식비',
             transport: '교통비',
             accommodation: '숙박비',
-            shopping: '쇼핑',
-            entertainment: '오락',
+            admission: '입장료',
             other: '기타'
         };
         return categories[category] || category;

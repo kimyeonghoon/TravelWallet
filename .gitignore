@@ -249,3 +249,6 @@ tmp/
 
 # Claude Code sensitive settings (keep general config)
 .claude/settings.local.json
+
+# Requirements management file (temporary, not for production)
+REQUIREMENTS.md

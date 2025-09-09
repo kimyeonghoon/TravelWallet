@@ -127,14 +127,16 @@ cp ./data/japan_travel_expenses.db ./backup/japan_travel_expenses_$(date +%Y%m%d
 - **교통카드**: IC카드(스이카, 파스모 등) 사용
 
 ### 🔐 인증 시스템
-- **매직 링크 로그인**: 이메일 기반 비밀번호 없는 인증
-- **Gmail SMTP 연동**: 안전한 로그인 링크 이메일 전송
+- **텔레그램 봇 로그인**: Chat ID 기반 6자리 코드 인증
+- **간편 로그인 모달**: 별도 페이지 없이 메인 페이지 내 모달 로그인
 - **JWT 토큰**: 15분 만료 세션 토큰으로 보안 강화
-- **사용자별 데이터 격리**: 개인 지출 데이터 완전 분리
+- **권한별 기능 제어**: 로그인 사용자만 지출 추가/수정/삭제 가능
 
 ### 📱 사용자 경험
 - **반응형 디자인**: 모바일/태블릿/데스크톱 지원
 - **직관적 UI**: Bootstrap 5 기반 깔끔한 인터페이스
+- **공개 지출 조회**: 누구나 지출 내역과 통계 확인 가능
+- **권한별 UI**: 로그인 상태에 따른 기능 표시/숨김
 - **실시간 알림**: 성공/오류 메시지 표시
 - **한국어 지원**: 완전한 한국어 인터페이스
 - **자동 세션 관리**: 만료된 세션 자동 감지 및 재로그인 유도
@@ -205,8 +207,11 @@ japan_travel_expense/
 - ✅ Complete CRUD operations (Create, Read, Update, Delete)
 - ✅ Expense edit functionality with modal interface
 - ✅ Payment method tracking (현금, 체크카드, 신용카드, 교통카드)
-- ✅ Email-based authentication system with magic links
-- ✅ User data isolation and security
+- ✅ Telegram bot authentication system with 6-digit codes
+- ✅ Login modal integration with main page (no separate login page)
+- ✅ Public expense viewing for all users
+- ✅ Authentication-based feature restrictions (add/edit/delete)
+- ✅ Predefined Chat ID (5469782369) for streamlined authentication
 - ✅ JWT session management with auto-expiry
 
 ## Notes
@@ -214,3 +219,5 @@ japan_travel_expense/
 - Project directory: `C:\workspace\japan_travel_expense`
 - Repository URL: https://github.com/kimyeonghoon/JAPAN_TRAVEL_EXPENSE.git
 - Claude Code permissions configured for git operations
+- to memorize
+- to memorize

@@ -25,14 +25,35 @@ This is a Japan travel expense tracking application project. The codebase is cur
 # Install Python dependencies
 pip install -r requirements.txt
 
+# Set up environment variables (optional for development)
+cp .env.example .env
+# Edit .env file with your Gmail SMTP settings
+
 # Run development server
 python main.py
 # or
 uvicorn main:app --reload
 
 # Access application
-# Frontend: http://localhost:8000
+# Frontend: http://localhost:8000 (redirects to /login if not authenticated)
+# Login page: http://localhost:8000/login
 # API docs: http://localhost:8000/docs
+```
+
+### Authentication Setup
+```bash
+# For production with email functionality:
+# 1. Enable 2FA on your Gmail account
+# 2. Generate an App Password: https://support.google.com/accounts/answer/185833
+# 3. Set environment variables in .env:
+SMTP_USERNAME=your-gmail@gmail.com
+SMTP_PASSWORD=your-app-password
+FROM_EMAIL=your-gmail@gmail.com
+SECRET_KEY=your-super-secret-key-here
+
+# For development without email:
+# - Magic links will be printed to console
+# - All other functionality works normally
 ```
 
 ### Docker Deployment
@@ -105,11 +126,18 @@ cp ./data/japan_travel_expenses.db ./backup/japan_travel_expenses_$(date +%Y%m%d
 - **신용카드**: 신용카드 결제
 - **교통카드**: IC카드(스이카, 파스모 등) 사용
 
+### 🔐 인증 시스템
+- **매직 링크 로그인**: 이메일 기반 비밀번호 없는 인증
+- **Gmail SMTP 연동**: 안전한 로그인 링크 이메일 전송
+- **JWT 토큰**: 15분 만료 세션 토큰으로 보안 강화
+- **사용자별 데이터 격리**: 개인 지출 데이터 완전 분리
+
 ### 📱 사용자 경험
 - **반응형 디자인**: 모바일/태블릿/데스크톱 지원
 - **직관적 UI**: Bootstrap 5 기반 깔끔한 인터페이스
 - **실시간 알림**: 성공/오류 메시지 표시
 - **한국어 지원**: 완전한 한국어 인터페이스
+- **자동 세션 관리**: 만료된 세션 자동 감지 및 재로그인 유도
 
 ## 📋 배포 전 체크리스트
 - [ ] Docker 및 Docker Compose 설치 확인
@@ -177,6 +205,9 @@ japan_travel_expense/
 - ✅ Complete CRUD operations (Create, Read, Update, Delete)
 - ✅ Expense edit functionality with modal interface
 - ✅ Payment method tracking (현금, 체크카드, 신용카드, 교통카드)
+- ✅ Email-based authentication system with magic links
+- ✅ User data isolation and security
+- ✅ JWT session management with auto-expiry
 
 ## Notes
 

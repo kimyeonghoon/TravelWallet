@@ -8,9 +8,10 @@ class ExpenseService:
     """Service class for expense database operations."""
     
     @staticmethod
-    def create_expense(db: Session, amount: float, category: str, description: str = "", payment_method: str = "현금") -> Expense:
-        """Create a new expense record."""
+    def create_expense(db: Session, user_id: int, amount: float, category: str, description: str = "", payment_method: str = "현금") -> Expense:
+        """Create a new expense record for a user."""
         expense = Expense(
+            user_id=user_id,
             amount=amount,
             category=category,
             description=description,
@@ -104,3 +105,79 @@ class ExpenseService:
             db.refresh(expense)
             return expense
         return None
+    
+    # User-specific methods
+    @staticmethod
+    def get_user_expenses(db: Session, user_id: int) -> List[Expense]:
+        """Get all expenses for a specific user ordered by timestamp descending."""
+        return db.query(Expense).filter(Expense.user_id == user_id).order_by(Expense.timestamp.desc()).all()
+    
+    @staticmethod
+    def get_user_expense(db: Session, user_id: int, expense_id: int) -> Optional[Expense]:
+        """Get a single expense by ID for a specific user."""
+        return db.query(Expense).filter(Expense.id == expense_id, Expense.user_id == user_id).first()
+    
+    @staticmethod
+    def update_user_expense(db: Session, user_id: int, expense_id: int, amount: float = None, 
+                          category: str = None, description: str = None, 
+                          expense_date: str = None, expense_time: str = None,
+                          payment_method: str = None) -> Optional[Expense]:
+        """Update an expense by ID for a specific user."""
+        expense = db.query(Expense).filter(Expense.id == expense_id, Expense.user_id == user_id).first()
+        if expense:
+            if amount is not None:
+                expense.amount = amount
+            if category is not None:
+                expense.category = category
+            if description is not None:
+                expense.description = description
+            if payment_method is not None:
+                expense.payment_method = payment_method
+            if expense_date is not None:
+                expense.date = expense_date
+            if expense_time is not None:
+                # Parse time and combine with existing date or new date
+                try:
+                    from datetime import datetime
+                    time_parts = expense_time.split(':')
+                    hour = int(time_parts[0])
+                    minute = int(time_parts[1])
+                    
+                    # Use the current date if no date change, otherwise use new date
+                    current_date = expense_date if expense_date else expense.date
+                    new_datetime = datetime.strptime(f"{current_date} {hour:02d}:{minute:02d}", "%Y-%m-%d %H:%M")
+                    expense.timestamp = new_datetime
+                except (ValueError, IndexError):
+                    # If time parsing fails, keep original timestamp
+                    pass
+            
+            db.commit()
+            db.refresh(expense)
+            return expense
+        return None
+    
+    @staticmethod
+    def delete_user_expense(db: Session, user_id: int, expense_id: int) -> bool:
+        """Delete an expense by ID for a specific user."""
+        expense = db.query(Expense).filter(Expense.id == expense_id, Expense.user_id == user_id).first()
+        if expense:
+            db.delete(expense)
+            db.commit()
+            return True
+        return False
+    
+    @staticmethod
+    def get_user_total_expenses(db: Session, user_id: int) -> float:
+        """Get total amount of all expenses for a specific user."""
+        result = db.query(func.sum(Expense.amount)).filter(Expense.user_id == user_id).scalar()
+        return result if result else 0.0
+    
+    @staticmethod
+    def get_user_today_expenses_total(db: Session, user_id: int) -> float:
+        """Get total expenses for today for a specific user."""
+        today = date.today().strftime("%Y-%m-%d")
+        result = db.query(func.sum(Expense.amount)).filter(
+            Expense.user_id == user_id,
+            Expense.date == today
+        ).scalar()
+        return result if result else 0.0

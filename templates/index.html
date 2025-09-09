@@ -31,6 +31,18 @@
                         <li class="nav-item">
                             <a class="nav-link" href="#"><i class="fas fa-chart-bar me-1"></i>통계</a>
                         </li>
+                        {% if user %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>{{ user.email }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" id="logout-btn">
+                                    <i class="fas fa-sign-out-alt me-2"></i>로그아웃
+                                </a></li>
+                            </ul>
+                        </li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>

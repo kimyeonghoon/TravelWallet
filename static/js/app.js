@@ -10,6 +10,7 @@ $(document).ready(function() {
         $('#expense-form').on('submit', handleExpenseSubmit);
         $(document).on('click', '.delete-expense', handleExpenseDelete);
         $(document).on('click', '.edit-expense', handleExpenseEdit);
+        $('#logout-btn').on('click', handleLogout);
     }
     
     // Handle expense form submission
@@ -319,6 +320,29 @@ $(document).ready(function() {
         return `${hours}:${minutes}`;
     }
     
+    // Handle logout
+    function handleLogout(e) {
+        e.preventDefault();
+        
+        if (confirm('로그아웃 하시겠습니까?')) {
+            $.ajax({
+                url: '/api/auth/logout',
+                method: 'POST',
+                success: function(response) {
+                    showAlert('로그아웃되었습니다.', 'info');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1000);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Logout error:', error);
+                    // Redirect to login even if logout API fails
+                    window.location.href = '/login';
+                }
+            });
+        }
+    }
+    
     // Show alert message
     function showAlert(message, type = 'info') {
         const alertHtml = `
@@ -339,4 +363,14 @@ $(document).ready(function() {
             $('.alert').fadeOut();
         }, 3000);
     }
+    
+    // Handle authentication errors globally
+    $(document).ajaxError(function(event, xhr, settings, thrownError) {
+        if (xhr.status === 401) {
+            showAlert('세션이 만료되었습니다. 다시 로그인해주세요.', 'warning');
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
+        }
+    });
 });

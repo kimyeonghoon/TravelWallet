@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 from models import create_tables, get_db
 from database import ExpenseService
@@ -33,10 +33,10 @@ class ExpenseResponse(BaseModel):
     timestamp: str
 
 class ExpenseUpdate(BaseModel):
-    amount: float = None
-    category: str = None
-    description: str = None
-    date: str = None
+    amount: Optional[float] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    date: Optional[str] = None
 
 class SummaryResponse(BaseModel):
     total_expense: float

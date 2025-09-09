@@ -61,7 +61,7 @@ $(document).ready(function() {
     // Load and display expenses from API
     function loadExpenses() {
         $.ajax({
-            url: '/api/expenses',
+            url: '/api/expenses?' + new Date().getTime(), // Cache busting
             method: 'GET',
             success: function(expenses) {
                 const expenseList = $('#expense-list');
@@ -135,7 +135,7 @@ $(document).ready(function() {
     // Update summary cards from API
     function updateSummary() {
         $.ajax({
-            url: '/api/summary',
+            url: '/api/summary?' + new Date().getTime(), // Cache busting
             method: 'GET',
             success: function(summary) {
                 $('#total-expense').text(`₩${summary.total_expense.toLocaleString()}`);
@@ -237,13 +237,22 @@ $(document).ready(function() {
     
     // Update expense
     function updateExpense(expenseId, modal) {
-        const updateData = {
-            amount: parseFloat($('#edit-amount').val()),
-            category: $('#edit-category').val(),
-            description: $('#edit-description').val(),
-            date: $('#edit-date').val(),
-            time: $('#edit-time').val()
-        };
+        const updateData = {};
+        
+        // Only include fields that have values
+        const amount = $('#edit-amount').val();
+        const category = $('#edit-category').val();
+        const description = $('#edit-description').val();
+        const date = $('#edit-date').val();
+        const time = $('#edit-time').val();
+        
+        if (amount) updateData.amount = parseFloat(amount);
+        if (category) updateData.category = category;
+        if (description !== undefined) updateData.description = description;
+        if (date) updateData.date = date;
+        if (time) updateData.time = time;
+        
+        console.log('Updating expense with data:', updateData);
         
         $.ajax({
             url: `/api/expenses/${expenseId}`,
@@ -251,6 +260,7 @@ $(document).ready(function() {
             contentType: 'application/json',
             data: JSON.stringify(updateData),
             success: function(response) {
+                console.log('Update response:', response);
                 modal.hide();
                 loadExpenses();
                 updateSummary();

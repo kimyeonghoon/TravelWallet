@@ -14,7 +14,8 @@
       "Bash(docker-compose up:*)",
       "Bash(docker compose:*)",
       "Bash(git checkout:*)",
-      "Bash(uvicorn:*)"
+      "Bash(uvicorn:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

@@ -19,6 +19,7 @@ $(document).ready(function() {
         const amount = parseFloat($('#amount').val());
         const category = $('#category').val();
         const description = $('#description').val();
+        const paymentMethod = $('#payment-method').val();
         
         if (!amount || !category) {
             showAlert('금액과 카테고리를 입력해주세요.', 'warning');
@@ -28,7 +29,8 @@ $(document).ready(function() {
         const expenseData = {
             amount: amount,
             category: category,
-            description: description || ""
+            description: description || "",
+            payment_method: paymentMethod
         };
         
         // Show loading state
@@ -86,6 +88,7 @@ $(document).ready(function() {
                                     </div>
                                     <p class="mb-1 text-muted">${expense.description || '설명 없음'}</p>
                                     <small class="text-muted">
+                                        <i class="fas fa-credit-card me-1"></i>${expense.payment_method || '현금'} • 
                                         <i class="fas fa-clock me-1"></i>${displayTime}
                                     </small>
                                 </div>
@@ -200,6 +203,15 @@ $(document).ready(function() {
                                     <input type="text" class="form-control" id="edit-description" value="${expense.description}">
                                 </div>
                                 <div class="mb-3">
+                                    <label for="edit-payment-method" class="form-label">결제 수단</label>
+                                    <select class="form-select" id="edit-payment-method" required>
+                                        <option value="현금" ${(expense.payment_method || '현금') === '현금' ? 'selected' : ''}>현금</option>
+                                        <option value="체크카드" ${expense.payment_method === '체크카드' ? 'selected' : ''}>체크카드</option>
+                                        <option value="신용카드" ${expense.payment_method === '신용카드' ? 'selected' : ''}>신용카드</option>
+                                        <option value="교통카드" ${expense.payment_method === '교통카드' ? 'selected' : ''}>교통카드</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
                                     <label for="edit-date" class="form-label">날짜</label>
                                     <input type="date" class="form-control" id="edit-date" value="${expense.date}" required>
                                 </div>
@@ -243,12 +255,14 @@ $(document).ready(function() {
         const amount = $('#edit-amount').val();
         const category = $('#edit-category').val();
         const description = $('#edit-description').val();
+        const paymentMethod = $('#edit-payment-method').val();
         const date = $('#edit-date').val();
         const time = $('#edit-time').val();
         
         if (amount) updateData.amount = parseFloat(amount);
         if (category) updateData.category = category;
         if (description !== undefined) updateData.description = description;
+        if (paymentMethod) updateData.payment_method = paymentMethod;
         if (date) updateData.date = date;
         if (time) updateData.time = time;
         

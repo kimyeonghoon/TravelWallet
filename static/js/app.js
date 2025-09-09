@@ -185,10 +185,6 @@ $(document).ready(function() {
                         <div class="modal-body">
                             <form id="edit-expense-form">
                                 <div class="mb-3">
-                                    <label for="edit-amount" class="form-label">금액 (₩)</label>
-                                    <input type="number" class="form-control" id="edit-amount" value="${expense.amount}" required>
-                                </div>
-                                <div class="mb-3">
                                     <label for="edit-category" class="form-label">카테고리</label>
                                     <select class="form-select" id="edit-category" required>
                                         <option value="food" ${expense.category === 'food' ? 'selected' : ''}>식비</option>
@@ -199,10 +195,6 @@ $(document).ready(function() {
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="edit-description" class="form-label">설명</label>
-                                    <input type="text" class="form-control" id="edit-description" value="${expense.description}">
-                                </div>
-                                <div class="mb-3">
                                     <label for="edit-payment-method" class="form-label">결제 수단</label>
                                     <select class="form-select" id="edit-payment-method" required>
                                         <option value="현금" ${(expense.payment_method || '현금') === '현금' ? 'selected' : ''}>현금</option>
@@ -210,6 +202,14 @@ $(document).ready(function() {
                                         <option value="신용카드" ${expense.payment_method === '신용카드' ? 'selected' : ''}>신용카드</option>
                                         <option value="교통카드" ${expense.payment_method === '교통카드' ? 'selected' : ''}>교통카드</option>
                                     </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit-amount" class="form-label">금액 (₩)</label>
+                                    <input type="number" class="form-control" id="edit-amount" value="${expense.amount}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit-description" class="form-label">설명</label>
+                                    <input type="text" class="form-control" id="edit-description" value="${expense.description}">
                                 </div>
                                 <div class="mb-3">
                                     <label for="edit-date" class="form-label">날짜</label>

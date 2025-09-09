@@ -32,6 +32,12 @@ class ExpenseResponse(BaseModel):
     date: str
     timestamp: str
 
+class ExpenseUpdate(BaseModel):
+    amount: float = None
+    category: str = None
+    description: str = None
+    date: str = None
+
 class SummaryResponse(BaseModel):
     total_expense: float
     today_expense: float
@@ -63,6 +69,21 @@ async def get_expenses(db: Session = Depends(get_db)):
     """Get all expenses."""
     expenses = ExpenseService.get_all_expenses(db)
     return [ExpenseResponse(**expense.to_dict()) for expense in expenses]
+
+@app.put("/api/expenses/{expense_id}", response_model=ExpenseResponse)
+async def update_expense(expense_id: int, expense_update: ExpenseUpdate, db: Session = Depends(get_db)):
+    """Update an expense."""
+    updated_expense = ExpenseService.update_expense(
+        db=db,
+        expense_id=expense_id,
+        amount=expense_update.amount,
+        category=expense_update.category,
+        description=expense_update.description,
+        expense_date=expense_update.date
+    )
+    if not updated_expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    return ExpenseResponse(**updated_expense.to_dict())
 
 @app.delete("/api/expenses/{expense_id}")
 async def delete_expense(expense_id: int, db: Session = Depends(get_db)):

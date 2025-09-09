@@ -64,3 +64,24 @@ class ExpenseService:
         today = date.today().strftime("%Y-%m-%d")
         result = db.query(func.sum(Expense.amount)).filter(Expense.date == today).scalar()
         return result if result else 0.0
+    
+    @staticmethod
+    def update_expense(db: Session, expense_id: int, amount: float = None, 
+                      category: str = None, description: str = None, 
+                      expense_date: str = None) -> Optional[Expense]:
+        """Update an expense by ID."""
+        expense = db.query(Expense).filter(Expense.id == expense_id).first()
+        if expense:
+            if amount is not None:
+                expense.amount = amount
+            if category is not None:
+                expense.category = category
+            if description is not None:
+                expense.description = description
+            if expense_date is not None:
+                expense.date = expense_date
+            
+            db.commit()
+            db.refresh(expense)
+            return expense
+        return None

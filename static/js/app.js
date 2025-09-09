@@ -9,6 +9,7 @@ $(document).ready(function() {
         // Event listeners
         $('#expense-form').on('submit', handleExpenseSubmit);
         $(document).on('click', '.delete-expense', handleExpenseDelete);
+        $(document).on('click', '.edit-expense', handleExpenseEdit);
     }
     
     // Handle expense form submission
@@ -88,9 +89,14 @@ $(document).ready(function() {
                                         <i class="fas fa-clock me-1"></i>${displayTime}
                                     </small>
                                 </div>
-                                <button class="btn btn-sm btn-outline-danger delete-expense ms-2" data-id="${expense.id}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                <div class="btn-group ms-2">
+                                    <button class="btn btn-sm btn-outline-primary edit-expense" data-id="${expense.id}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger delete-expense" data-id="${expense.id}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -137,6 +143,117 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.error('Error loading summary:', error);
+            }
+        });
+    }
+    
+    // Handle expense edit
+    function handleExpenseEdit(e) {
+        const expenseId = parseInt($(this).data('id'));
+        
+        // Get current expense data
+        $.ajax({
+            url: `/api/expenses`,
+            method: 'GET',
+            success: function(expenses) {
+                const expense = expenses.find(e => e.id === expenseId);
+                if (expense) {
+                    showEditModal(expense);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error fetching expense:', error);
+                showAlert('지출 정보를 불러올 수 없습니다.', 'danger');
+            }
+        });
+    }
+    
+    // Show edit modal
+    function showEditModal(expense) {
+        // Create modal HTML
+        const modalHtml = `
+            <div class="modal fade" id="editExpenseModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">지출 수정</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="edit-expense-form">
+                                <div class="mb-3">
+                                    <label for="edit-amount" class="form-label">금액 (₩)</label>
+                                    <input type="number" class="form-control" id="edit-amount" value="${expense.amount}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit-category" class="form-label">카테고리</label>
+                                    <select class="form-select" id="edit-category" required>
+                                        <option value="food" ${expense.category === 'food' ? 'selected' : ''}>식비</option>
+                                        <option value="transport" ${expense.category === 'transport' ? 'selected' : ''}>교통비</option>
+                                        <option value="accommodation" ${expense.category === 'accommodation' ? 'selected' : ''}>숙박비</option>
+                                        <option value="admission" ${expense.category === 'admission' ? 'selected' : ''}>입장료</option>
+                                        <option value="other" ${expense.category === 'other' ? 'selected' : ''}>기타</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit-description" class="form-label">설명</label>
+                                    <input type="text" class="form-control" id="edit-description" value="${expense.description}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit-date" class="form-label">날짜</label>
+                                    <input type="date" class="form-control" id="edit-date" value="${expense.date}" required>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                            <button type="button" class="btn btn-primary" id="save-expense-btn" data-id="${expense.id}">저장</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if any
+        $('#editExpenseModal').remove();
+        
+        // Add modal to body
+        $('body').append(modalHtml);
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('editExpenseModal'));
+        modal.show();
+        
+        // Handle save button click
+        $('#save-expense-btn').on('click', function() {
+            const expenseId = parseInt($(this).data('id'));
+            updateExpense(expenseId, modal);
+        });
+    }
+    
+    // Update expense
+    function updateExpense(expenseId, modal) {
+        const updateData = {
+            amount: parseFloat($('#edit-amount').val()),
+            category: $('#edit-category').val(),
+            description: $('#edit-description').val(),
+            date: $('#edit-date').val()
+        };
+        
+        $.ajax({
+            url: `/api/expenses/${expenseId}`,
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(updateData),
+            success: function(response) {
+                modal.hide();
+                loadExpenses();
+                updateSummary();
+                showAlert('지출이 수정되었습니다.', 'success');
+            },
+            error: function(xhr, status, error) {
+                console.error('Error updating expense:', error);
+                showAlert('지출 수정 중 오류가 발생했습니다.', 'danger');
             }
         });
     }

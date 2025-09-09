@@ -31,6 +31,7 @@ ALLOWED_EMAIL = os.getenv("ALLOWED_EMAIL", "me@yeonghoon.kim")
 MAX_LOGIN_ATTEMPTS = int(os.getenv("MAX_LOGIN_ATTEMPTS", "5"))
 BAN_DURATION_MINUTES = int(os.getenv("BAN_DURATION_MINUTES", "10"))
 
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class AuthService:

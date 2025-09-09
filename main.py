@@ -136,6 +136,7 @@ async def read_root(
 async def health_check():
     return {"status": "ok", "message": "Japan Travel Expense API is running"}
 
+
 # Authentication endpoints
 @app.post("/api/auth/login", response_model=LoginResponse)
 async def request_login_code(

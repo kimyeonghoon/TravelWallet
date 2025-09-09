@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request, Depends, HTTPException, Cookie
+import ipaddress
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -50,14 +51,13 @@ class SummaryResponse(BaseModel):
 
 # Authentication models
 class LoginRequest(BaseModel):
-    telegram_chat_id: str
+    email: str
 
 class LoginCodeRequest(BaseModel):
     code: str
 
 class LoginResponse(BaseModel):
     message: str
-    telegram_chat_id: str
 
 class UserResponse(BaseModel):
     id: int
@@ -67,6 +67,25 @@ class UserResponse(BaseModel):
 
 # Security
 security = HTTPBearer(auto_error=False)
+
+def get_client_ip(request: Request) -> str:
+    """Get client IP address from request."""
+    # Check for forwarded header (when behind proxy)
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        # Take the first IP in the list
+        return forwarded_for.split(',')[0].strip()
+    
+    # Check for real IP header
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+    
+    # Fall back to direct connection IP
+    if request.client:
+        return request.client.host
+    
+    return "127.0.0.1"  # Fallback
 
 async def get_current_user(
     request: Request,
@@ -119,28 +138,31 @@ async def health_check():
 
 # Authentication endpoints
 @app.post("/api/auth/login", response_model=LoginResponse)
-async def request_login_code(login_data: LoginRequest, db: Session = Depends(get_db)):
-    """Request login code via Telegram."""
+async def request_login_code(
+    login_data: LoginRequest, 
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Request login code via email verification."""
     try:
-        # Create or get user
-        user = AuthService.create_user(db, login_data.telegram_chat_id)
+        # Get client IP
+        client_ip = get_client_ip(request)
         
-        # Create login code
-        login_code = AuthService.create_login_code(db, user.id)
-        
-        # Send Telegram message
-        message_sent = AuthService.send_login_code_telegram(login_data.telegram_chat_id, login_code.token)
-        
-        if not message_sent:
-            print(f"Login code for {login_data.telegram_chat_id}: {login_code.token}")
-        
-        return LoginResponse(
-            message="로그인 코드가 텔레그램으로 전송되었습니다. 텔레그램을 확인해주세요.",
-            telegram_chat_id=login_data.telegram_chat_id
+        # Verify email and send code
+        success, message = AuthService.verify_email_and_send_code(
+            db, login_data.email, client_ip
         )
         
+        if not success:
+            raise HTTPException(status_code=400, detail=message)
+        
+        return LoginResponse(message=message)
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send login code: {str(e)}")
+        print(f"Failed to send login code: {e}")
+        raise HTTPException(status_code=500, detail="로그인 코드 전송에 실패했습니다.")
 
 @app.post("/api/auth/verify")
 async def verify_login_code(code_data: LoginCodeRequest, db: Session = Depends(get_db)):

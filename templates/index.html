@@ -185,17 +185,25 @@
                     <div id="login-step1">
                         <div class="text-center mb-3">
                             <i class="fab fa-telegram-plane" style="font-size: 3rem; color: #0088cc;"></i>
-                            <p class="mt-2 text-muted">간편하게 텔레그램으로 로그인하세요</p>
+                            <p class="mt-2 text-muted">이메일을 입력하여 텔레그램으로 로그인하세요</p>
                         </div>
                         
-                        <button type="button" class="btn btn-primary w-100" id="request-login-btn">
-                            <i class="fas fa-paper-plane me-2"></i>
-                            <span id="request-btn-text">로그인 코드 받기</span>
-                        </button>
+                        <form id="email-form">
+                            <div class="mb-3">
+                                <label for="login-email" class="form-label">이메일 주소</label>
+                                <input type="email" class="form-control" id="login-email" 
+                                       placeholder="me@yeonghoon.kim" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100" id="request-login-btn">
+                                <i class="fas fa-paper-plane me-2"></i>
+                                <span id="request-btn-text">로그인 코드 받기</span>
+                            </button>
+                        </form>
                         
-                        <div class="alert alert-info mt-3">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <small>미리 설정된 텔레그램으로 6자리 인증 코드를 보내드립니다.</small>
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <small><strong>보안 알림:</strong> 5회 실패 시 10분간 접속 제한됩니다.</small>
                         </div>
                     </div>
                     

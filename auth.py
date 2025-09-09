@@ -10,7 +10,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from models import User, LoginToken
+from models import User, LoginToken, IPBan
 
 # Load environment variables
 load_dotenv()
@@ -28,7 +28,7 @@ APP_URL = os.getenv("APP_URL", "http://localhost:8000")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class AuthService:
-    """Authentication service for handling Telegram bot-based login."""
+    """Authentication service for handling email-based Telegram bot login."""
     
     @staticmethod
     def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -50,6 +50,80 @@ class AuthService:
             return payload
         except JWTError:
             return None
+    
+    @staticmethod
+    def check_ip_ban(db: Session, ip_address: str) -> Optional[IPBan]:
+        """Check if IP address is banned."""
+        ip_ban = db.query(IPBan).filter(IPBan.ip_address == ip_address).first()
+        if ip_ban and ip_ban.is_banned():
+            return ip_ban
+        return None
+    
+    @staticmethod
+    def record_failed_attempt(db: Session, ip_address: str) -> bool:
+        """Record failed login attempt and ban IP if necessary."""
+        ip_ban = db.query(IPBan).filter(IPBan.ip_address == ip_address).first()
+        
+        if not ip_ban:
+            # First failed attempt
+            ip_ban = IPBan(
+                ip_address=ip_address,
+                failed_attempts=1,
+                first_attempt=datetime.utcnow(),
+                last_attempt=datetime.utcnow()
+            )
+            db.add(ip_ban)
+        else:
+            # Update existing record
+            ip_ban.failed_attempts += 1
+            ip_ban.last_attempt = datetime.utcnow()
+            
+            # Ban IP if 5 or more attempts
+            if ip_ban.failed_attempts >= 5:
+                ip_ban.banned_until = datetime.utcnow() + timedelta(minutes=10)
+        
+        db.commit()
+        return ip_ban.failed_attempts >= 5
+    
+    @staticmethod
+    def reset_failed_attempts(db: Session, ip_address: str):
+        """Reset failed attempts for successful login."""
+        ip_ban = db.query(IPBan).filter(IPBan.ip_address == ip_address).first()
+        if ip_ban:
+            db.delete(ip_ban)
+            db.commit()
+    
+    @staticmethod
+    def verify_email_and_send_code(db: Session, email: str, ip_address: str) -> tuple[bool, str]:
+        """Verify email and send Telegram code if valid."""
+        # Check if IP is banned
+        ip_ban = AuthService.check_ip_ban(db, ip_address)
+        if ip_ban:
+            remaining_time = int((ip_ban.banned_until - datetime.utcnow()).total_seconds() / 60)
+            return False, f"IP가 차단되었습니다. {remaining_time}분 후 다시 시도하세요."
+        
+        # Verify email
+        if email.lower() != "me@yeonghoon.kim":
+            # Record failed attempt
+            is_banned = AuthService.record_failed_attempt(db, ip_address)
+            if is_banned:
+                return False, "너무 많은 실패로 인해 10분간 접속이 제한됩니다."
+            return False, "등록되지 않은 이메일입니다."
+        
+        # Email is valid, reset any previous failures
+        AuthService.reset_failed_attempts(db, ip_address)
+        
+        # Get or create user with predefined Chat ID
+        user = AuthService.create_user(db, "5496782369")
+        
+        # Create and send login code
+        login_token = AuthService.create_login_code(db, user.id)
+        success = AuthService.send_login_code_telegram(user.telegram_chat_id, login_token.token)
+        
+        if success:
+            return True, "인증 코드가 텔레그램으로 전송되었습니다."
+        else:
+            return True, "인증 코드가 생성되었습니다. (개발 모드)"
     
     @staticmethod
     def create_user(db: Session, telegram_chat_id: str) -> User:

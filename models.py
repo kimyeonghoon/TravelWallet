@@ -37,7 +37,8 @@ class User(Base):
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
+    telegram_chat_id = Column(String(255), unique=True, index=True, nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=True)  # Keep for backward compatibility
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
@@ -50,6 +51,7 @@ class User(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "telegram_chat_id": self.telegram_chat_id,
             "email": self.email,
             "is_active": self.is_active,
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
@@ -69,6 +71,22 @@ class LoginToken(Base):
     
     # Relationship
     user = relationship("User", back_populates="login_tokens")
+
+class IPBan(Base):
+    __tablename__ = "ip_bans"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    ip_address = Column(String(45), index=True, nullable=False)  # Support IPv6
+    failed_attempts = Column(Integer, default=1)
+    banned_until = Column(DateTime, nullable=True)
+    first_attempt = Column(DateTime, default=datetime.utcnow)
+    last_attempt = Column(DateTime, default=datetime.utcnow)
+    
+    def is_banned(self):
+        """Check if IP is currently banned."""
+        if self.banned_until and datetime.utcnow() < self.banned_until:
+            return True
+        return False
 
 # Database configuration
 import os

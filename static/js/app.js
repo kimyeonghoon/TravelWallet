@@ -13,7 +13,7 @@ $(document).ready(function() {
         $('#logout-btn').on('click', handleLogout);
         
         // Login modal event listeners
-        $('#request-login-btn').on('click', handleLoginRequest);
+        $('#email-form').on('submit', handleLoginRequest);
         $('#login-code-form').on('submit', handleLoginCodeSubmit);
         $('#back-to-step1').on('click', showLoginStep1);
         $('#login-code').on('input', formatLoginCode);
@@ -373,7 +373,16 @@ $(document).ready(function() {
     }
     
     // Login Modal Functions
-    function handleLoginRequest() {
+    function handleLoginRequest(e) {
+        e.preventDefault();
+        
+        const email = $('#login-email').val().trim();
+        
+        if (!email) {
+            showLoginAlert('이메일 주소를 입력해주세요.', 'warning');
+            return;
+        }
+        
         const submitBtn = $('#request-login-btn');
         const btnText = $('#request-btn-text');
         const originalText = btnText.text();
@@ -381,13 +390,13 @@ $(document).ready(function() {
         submitBtn.prop('disabled', true);
         btnText.html('<span class="spinner-border spinner-border-sm me-2"></span>전송 중...');
         
-        // Send login request with predefined Chat ID
+        // Send login request with email
         $.ajax({
             url: '/api/auth/login',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({
-                telegram_chat_id: '5469782369'
+                email: email
             }),
             success: function(response) {
                 showLoginAlert(response.message, 'success');
@@ -459,6 +468,7 @@ $(document).ready(function() {
         $('#request-login-btn').prop('disabled', false);
         $('#request-btn-text').text('로그인 코드 받기');
         $('#login-code').val('');
+        $('#login-email').val('');
     }
     
     function showLoginStep2() {

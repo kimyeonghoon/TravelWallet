@@ -34,13 +34,19 @@
                         {% if user %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user me-1"></i>{{ user.email }}
+                                <i class="fab fa-telegram-plane me-1"></i>{{ user.telegram_chat_id }}
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="#" id="logout-btn">
                                     <i class="fas fa-sign-out-alt me-2"></i>로그아웃
                                 </a></li>
                             </ul>
+                        </li>
+                        {% else %}
+                        <li class="nav-item">
+                            <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">
+                                <i class="fab fa-telegram-plane me-1"></i>로그인
+                            </button>
                         </li>
                         {% endif %}
                     </ul>
@@ -145,6 +151,70 @@
                                 <p class="text-muted text-center">아직 지출 내역이 없습니다.</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fab fa-telegram-plane me-2"></i>텔레그램 로그인
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="login-alerts"></div>
+                    
+                    <!-- Step 1: Request Code -->
+                    <div id="login-step1">
+                        <div class="text-center mb-3">
+                            <i class="fab fa-telegram-plane" style="font-size: 3rem; color: #0088cc;"></i>
+                            <p class="mt-2 text-muted">간편하게 텔레그램으로 로그인하세요</p>
+                        </div>
+                        
+                        <button type="button" class="btn btn-primary w-100" id="request-login-btn">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            <span id="request-btn-text">로그인 코드 받기</span>
+                        </button>
+                        
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <small>미리 설정된 텔레그램으로 6자리 인증 코드를 보내드립니다.</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: Enter Code -->
+                    <div id="login-step2" style="display: none;">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-mobile-alt" style="font-size: 2rem; color: #0088cc;"></i>
+                            <h6 class="mt-2">코드를 입력하세요</h6>
+                            <p class="text-muted">텔레그램으로 전송된 6자리 코드를 입력하세요</p>
+                        </div>
+                        
+                        <form id="login-code-form">
+                            <div class="mb-3">
+                                <input type="text" class="form-control text-center" id="login-code" 
+                                       placeholder="000000" maxlength="6" required pattern="[0-9]{6}"
+                                       style="font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: 600;">
+                                <div class="form-text text-center">
+                                    <i class="fas fa-clock me-1"></i>코드는 15분 후 만료됩니다
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                <span id="verify-btn-text">로그인</span>
+                            </button>
+                            
+                            <button type="button" class="btn btn-link w-100 mt-2" id="back-to-step1">
+                                <i class="fas fa-arrow-left me-1"></i>다시 코드 요청
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

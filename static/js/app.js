@@ -11,6 +11,12 @@ $(document).ready(function() {
         $(document).on('click', '.delete-expense', handleExpenseDelete);
         $(document).on('click', '.edit-expense', handleExpenseEdit);
         $('#logout-btn').on('click', handleLogout);
+        
+        // Login modal event listeners
+        $('#request-login-btn').on('click', handleLoginRequest);
+        $('#login-code-form').on('submit', handleLoginCodeSubmit);
+        $('#back-to-step1').on('click', showLoginStep1);
+        $('#login-code').on('input', formatLoginCode);
     }
     
     // Handle expense form submission
@@ -364,13 +370,132 @@ $(document).ready(function() {
         }, 3000);
     }
     
+    // Login Modal Functions
+    function handleLoginRequest() {
+        const submitBtn = $('#request-login-btn');
+        const btnText = $('#request-btn-text');
+        const originalText = btnText.text();
+        
+        submitBtn.prop('disabled', true);
+        btnText.html('<span class="spinner-border spinner-border-sm me-2"></span>전송 중...');
+        
+        // Send login request with predefined Chat ID
+        $.ajax({
+            url: '/api/auth/login',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                telegram_chat_id: '5469782369'
+            }),
+            success: function(response) {
+                showLoginAlert(response.message, 'success');
+                showLoginStep2();
+            },
+            error: function(xhr, status, error) {
+                console.error('Login request failed:', error);
+                let errorMessage = '로그인 요청 중 오류가 발생했습니다.';
+                
+                if (xhr.responseJSON && xhr.responseJSON.detail) {
+                    errorMessage = xhr.responseJSON.detail;
+                }
+                
+                showLoginAlert(errorMessage, 'danger');
+                btnText.text(originalText);
+                submitBtn.prop('disabled', false);
+            }
+        });
+    }
+    
+    function handleLoginCodeSubmit(e) {
+        e.preventDefault();
+        
+        const code = $('#login-code').val().trim();
+        
+        if (!code || code.length !== 6) {
+            showLoginAlert('6자리 코드를 입력해주세요.', 'warning');
+            return;
+        }
+        
+        const submitBtn = $('#login-code-form button[type="submit"]');
+        const btnText = $('#verify-btn-text');
+        const originalText = btnText.text();
+        
+        submitBtn.prop('disabled', true);
+        btnText.html('<span class="spinner-border spinner-border-sm me-2"></span>확인 중...');
+        
+        $.ajax({
+            url: '/api/auth/verify',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                code: code
+            }),
+            success: function(response) {
+                showLoginAlert('로그인 성공! 페이지를 새로고침합니다.', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            },
+            error: function(xhr, status, error) {
+                console.error('Code verification failed:', error);
+                let errorMessage = '코드 확인 중 오류가 발생했습니다.';
+                
+                if (xhr.responseJSON && xhr.responseJSON.detail) {
+                    errorMessage = xhr.responseJSON.detail;
+                }
+                
+                showLoginAlert(errorMessage, 'danger');
+                btnText.text(originalText);
+                submitBtn.prop('disabled', false);
+            }
+        });
+    }
+    
+    function showLoginStep1() {
+        $('#login-step1').show();
+        $('#login-step2').hide();
+        $('#request-login-btn').prop('disabled', false);
+        $('#request-btn-text').text('로그인 코드 받기');
+        $('#login-code').val('');
+    }
+    
+    function showLoginStep2() {
+        $('#login-step1').hide();
+        $('#login-step2').show();
+        $('#login-code').focus();
+    }
+    
+    function formatLoginCode() {
+        let value = $(this).val().replace(/\D/g, '');
+        $(this).val(value);
+    }
+    
+    function showLoginAlert(message, type) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        $('#login-alerts').html(alertHtml);
+        
+        // Auto-hide success alerts after 5 seconds
+        if (type === 'success') {
+            setTimeout(() => {
+                $('.alert').fadeOut();
+            }, 5000);
+        }
+    }
+
     // Handle authentication errors globally
     $(document).ajaxError(function(event, xhr, settings, thrownError) {
-        if (xhr.status === 401) {
-            showAlert('세션이 만료되었습니다. 다시 로그인해주세요.', 'warning');
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 2000);
+        if (xhr.status === 401 && !settings.url.includes('/api/auth/')) {
+            showAlert('로그인이 필요합니다.', 'warning');
+            // Show login modal instead of redirecting
+            const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            loginModal.show();
         }
     });
 });

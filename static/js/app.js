@@ -99,6 +99,7 @@ $(document).ready(function() {
                                         <i class="fas fa-clock me-1"></i>${displayTime}
                                     </small>
                                 </div>
+                                ${window.currentUser ? `
                                 <div class="btn-group ms-2">
                                     <button class="btn btn-sm btn-outline-primary edit-expense" data-id="${expense.id}">
                                         <i class="fas fa-edit"></i>
@@ -107,6 +108,7 @@ $(document).ready(function() {
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
+                                ` : ''}
                             </div>
                         </div>
                     `;

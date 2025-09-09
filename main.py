@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import List, Optional
 
 from models import create_tables, get_db, User
@@ -50,15 +50,19 @@ class SummaryResponse(BaseModel):
 
 # Authentication models
 class LoginRequest(BaseModel):
-    email: EmailStr
+    telegram_chat_id: str
+
+class LoginCodeRequest(BaseModel):
+    code: str
 
 class LoginResponse(BaseModel):
     message: str
-    email: str
+    telegram_chat_id: str
 
 class UserResponse(BaseModel):
     id: int
-    email: str
+    telegram_chat_id: str
+    email: Optional[str] = None
     is_active: bool
 
 # Security
@@ -99,11 +103,11 @@ async def require_auth(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request, current_user: User = Depends(get_current_user)):
-    # Redirect to login if not authenticated
-    if not current_user:
-        return RedirectResponse(url="/login", status_code=302)
-    
+async def read_root(
+    request: Request, 
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """Main page accessible to all users, with login features for authenticated users."""
     return templates.TemplateResponse("index.html", {
         "request": request,
         "user": current_user
@@ -115,48 +119,42 @@ async def health_check():
 
 # Authentication endpoints
 @app.post("/api/auth/login", response_model=LoginResponse)
-async def request_login(login_data: LoginRequest, db: Session = Depends(get_db)):
-    """Request magic link login email."""
+async def request_login_code(login_data: LoginRequest, db: Session = Depends(get_db)):
+    """Request login code via Telegram."""
     try:
         # Create or get user
-        user = AuthService.create_user(db, login_data.email)
+        user = AuthService.create_user(db, login_data.telegram_chat_id)
         
-        # Create login token
-        login_token = AuthService.create_login_token(db, user.id)
+        # Create login code
+        login_code = AuthService.create_login_code(db, user.id)
         
-        # Generate magic link
-        magic_link = f"http://localhost:8000/auth/verify/{login_token.token}"
+        # Send Telegram message
+        message_sent = AuthService.send_login_code_telegram(login_data.telegram_chat_id, login_code.token)
         
-        # Send email
-        email_sent = AuthService.send_magic_link_email(login_data.email, magic_link)
-        
-        if not email_sent:
-            print(f"Magic link for {login_data.email}: {magic_link}")
+        if not message_sent:
+            print(f"Login code for {login_data.telegram_chat_id}: {login_code.token}")
         
         return LoginResponse(
-            message="로그인 링크가 이메일로 전송되었습니다. 이메일을 확인해주세요.",
-            email=login_data.email
+            message="로그인 코드가 텔레그램으로 전송되었습니다. 텔레그램을 확인해주세요.",
+            telegram_chat_id=login_data.telegram_chat_id
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send login email: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to send login code: {str(e)}")
 
-@app.get("/auth/verify/{token}")
-async def verify_login(token: str, db: Session = Depends(get_db)):
-    """Verify magic link and login user."""
-    user = AuthService.validate_login_token(db, token)
+@app.post("/api/auth/verify")
+async def verify_login_code(code_data: LoginCodeRequest, db: Session = Depends(get_db)):
+    """Verify login code and create session."""
+    user = AuthService.validate_login_code(db, code_data.code)
     
     if not user:
-        return RedirectResponse(
-            url="/login?error=invalid_token",
-            status_code=302
-        )
+        raise HTTPException(status_code=400, detail="Invalid or expired code")
     
     # Create JWT access token
     access_token = AuthService.create_access_token({"user_id": user.id})
     
-    # Redirect to main app with token in cookie
-    response = RedirectResponse(url="/", status_code=302)
+    # Return success with token
+    response = JSONResponse({"message": "Login successful", "user_id": user.id})
     response.set_cookie(
         key="session_token",
         value=access_token,
@@ -166,6 +164,7 @@ async def verify_login(token: str, db: Session = Depends(get_db)):
     )
     
     return response
+
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -187,6 +186,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     
     return UserResponse(
         id=current_user.id,
+        telegram_chat_id=current_user.telegram_chat_id,
         email=current_user.email,
         is_active=current_user.is_active
     )
@@ -208,9 +208,9 @@ async def create_expense(expense: ExpenseCreate, current_user: User = Depends(re
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/expenses", response_model=List[ExpenseResponse])
-async def get_expenses(current_user: User = Depends(require_auth), db: Session = Depends(get_db)):
-    """Get all expenses for current user."""
-    expenses = ExpenseService.get_user_expenses(db, current_user.id)
+async def get_expenses(db: Session = Depends(get_db)):
+    """Get all expenses - public access for expense viewing."""
+    expenses = ExpenseService.get_all_expenses(db)
     return [ExpenseResponse(**expense.to_dict()) for expense in expenses]
 
 @app.put("/api/expenses/{expense_id}", response_model=ExpenseResponse)
@@ -240,10 +240,10 @@ async def delete_expense(expense_id: int, current_user: User = Depends(require_a
     return {"message": "Expense deleted successfully"}
 
 @app.get("/api/summary", response_model=SummaryResponse)
-async def get_summary(current_user: User = Depends(require_auth), db: Session = Depends(get_db)):
-    """Get expense summary for current user."""
-    total_expense = ExpenseService.get_user_total_expenses(db, current_user.id)
-    today_expense = ExpenseService.get_user_today_expenses_total(db, current_user.id)
+async def get_summary(db: Session = Depends(get_db)):
+    """Get expense summary - public access for viewing totals."""
+    total_expense = ExpenseService.get_total_expenses(db)
+    today_expense = ExpenseService.get_today_expenses_total(db)
     
     return SummaryResponse(
         total_expense=total_expense,

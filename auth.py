@@ -23,7 +23,13 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15")
 # Telegram Bot configuration
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_BOT_NAME = os.getenv("TELEGRAM_BOT_NAME", "일본 여행 경비 인증")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "5496782369")
 APP_URL = os.getenv("APP_URL", "http://localhost:8000")
+
+# Authentication configuration
+ALLOWED_EMAIL = os.getenv("ALLOWED_EMAIL", "me@yeonghoon.kim")
+MAX_LOGIN_ATTEMPTS = int(os.getenv("MAX_LOGIN_ATTEMPTS", "5"))
+BAN_DURATION_MINUTES = int(os.getenv("BAN_DURATION_MINUTES", "10"))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -78,12 +84,12 @@ class AuthService:
             ip_ban.failed_attempts += 1
             ip_ban.last_attempt = datetime.utcnow()
             
-            # Ban IP if 5 or more attempts
-            if ip_ban.failed_attempts >= 5:
-                ip_ban.banned_until = datetime.utcnow() + timedelta(minutes=10)
+            # Ban IP if max attempts reached
+            if ip_ban.failed_attempts >= MAX_LOGIN_ATTEMPTS:
+                ip_ban.banned_until = datetime.utcnow() + timedelta(minutes=BAN_DURATION_MINUTES)
         
         db.commit()
-        return ip_ban.failed_attempts >= 5
+        return ip_ban.failed_attempts >= MAX_LOGIN_ATTEMPTS
     
     @staticmethod
     def reset_failed_attempts(db: Session, ip_address: str):
@@ -103,18 +109,18 @@ class AuthService:
             return False, f"IP가 차단되었습니다. {remaining_time}분 후 다시 시도하세요."
         
         # Verify email
-        if email.lower() != "me@yeonghoon.kim":
+        if email.lower() != ALLOWED_EMAIL.lower():
             # Record failed attempt
             is_banned = AuthService.record_failed_attempt(db, ip_address)
             if is_banned:
-                return False, "너무 많은 실패로 인해 10분간 접속이 제한됩니다."
+                return False, f"너무 많은 실패로 인해 {BAN_DURATION_MINUTES}분간 접속이 제한됩니다."
             return False, "등록되지 않은 이메일입니다."
         
         # Email is valid, reset any previous failures
         AuthService.reset_failed_attempts(db, ip_address)
         
-        # Get or create user with predefined Chat ID
-        user = AuthService.create_user(db, "5496782369")
+        # Get or create user with configured Chat ID
+        user = AuthService.create_user(db, TELEGRAM_CHAT_ID)
         
         # Create and send login code
         login_token = AuthService.create_login_code(db, user.id)

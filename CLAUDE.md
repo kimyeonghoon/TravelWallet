@@ -42,17 +42,21 @@ uvicorn main:app --reload
 
 ### Authentication Setup
 ```bash
-# For production with email functionality:
-# 1. Enable 2FA on your Gmail account
-# 2. Generate an App Password: https://support.google.com/accounts/answer/185833
-# 3. Set environment variables in .env:
-SMTP_USERNAME=your-gmail@gmail.com
-SMTP_PASSWORD=your-app-password
-FROM_EMAIL=your-gmail@gmail.com
-SECRET_KEY=your-super-secret-key-here
+# 1. Copy example environment file
+cp .env.example .env
 
-# For development without email:
-# - Magic links will be printed to console
+# 2. Configure required environment variables in .env:
+TELEGRAM_BOT_TOKEN=your-bot-token-from-botfather
+TELEGRAM_CHAT_ID=your-telegram-chat-id
+ALLOWED_EMAIL=your-allowed-email@domain.com
+SECRET_KEY=your-super-secret-jwt-key-min-32chars
+
+# Optional security settings (defaults shown):
+MAX_LOGIN_ATTEMPTS=5
+BAN_DURATION_MINUTES=10
+
+# For development without Telegram bot:
+# - Login codes will be printed to console
 # - All other functionality works normally
 ```
 
@@ -127,10 +131,12 @@ cp ./data/japan_travel_expenses.db ./backup/japan_travel_expenses_$(date +%Y%m%d
 - **교통카드**: IC카드(스이카, 파스모 등) 사용
 
 ### 🔐 인증 시스템
-- **텔레그램 봇 로그인**: Chat ID 기반 6자리 코드 인증
+- **이메일 기반 텔레그램 인증**: 사전 등록된 이메일로 텔레그램 봇 코드 발송
+- **IP 기반 Rate Limiting**: 5회 실패 시 10분간 자동 차단
 - **간편 로그인 모달**: 별도 페이지 없이 메인 페이지 내 모달 로그인
 - **JWT 토큰**: 15분 만료 세션 토큰으로 보안 강화
 - **권한별 기능 제어**: 로그인 사용자만 지출 추가/수정/삭제 가능
+- **보안 강화**: Chat ID 및 민감 정보 서버 측 보호
 
 ### 📱 사용자 경험
 - **반응형 디자인**: 모바일/태블릿/데스크톱 지원

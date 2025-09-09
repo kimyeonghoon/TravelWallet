@@ -68,7 +68,7 @@ class ExpenseService:
     @staticmethod
     def update_expense(db: Session, expense_id: int, amount: float = None, 
                       category: str = None, description: str = None, 
-                      expense_date: str = None) -> Optional[Expense]:
+                      expense_date: str = None, expense_time: str = None) -> Optional[Expense]:
         """Update an expense by ID."""
         expense = db.query(Expense).filter(Expense.id == expense_id).first()
         if expense:
@@ -80,6 +80,21 @@ class ExpenseService:
                 expense.description = description
             if expense_date is not None:
                 expense.date = expense_date
+            if expense_time is not None:
+                # Parse time and combine with existing date or new date
+                try:
+                    from datetime import datetime
+                    time_parts = expense_time.split(':')
+                    hour = int(time_parts[0])
+                    minute = int(time_parts[1])
+                    
+                    # Use the current date if no date change, otherwise use new date
+                    current_date = expense_date if expense_date else expense.date
+                    new_datetime = datetime.strptime(f"{current_date} {hour:02d}:{minute:02d}", "%Y-%m-%d %H:%M")
+                    expense.timestamp = new_datetime
+                except (ValueError, IndexError):
+                    # If time parsing fails, keep original timestamp
+                    pass
             
             db.commit()
             db.refresh(expense)

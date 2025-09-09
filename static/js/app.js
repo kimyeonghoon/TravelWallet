@@ -203,6 +203,10 @@ $(document).ready(function() {
                                     <label for="edit-date" class="form-label">날짜</label>
                                     <input type="date" class="form-control" id="edit-date" value="${expense.date}" required>
                                 </div>
+                                <div class="mb-3">
+                                    <label for="edit-time" class="form-label">시간</label>
+                                    <input type="time" class="form-control" id="edit-time" value="${formatTimeFromTimestamp(expense.timestamp)}">
+                                </div>
                             </form>
                         </div>
                         <div class="modal-footer">
@@ -237,7 +241,8 @@ $(document).ready(function() {
             amount: parseFloat($('#edit-amount').val()),
             category: $('#edit-category').val(),
             description: $('#edit-description').val(),
-            date: $('#edit-date').val()
+            date: $('#edit-date').val(),
+            time: $('#edit-time').val()
         };
         
         $.ajax({
@@ -280,6 +285,14 @@ $(document).ready(function() {
             hour: '2-digit',
             minute: '2-digit'
         });
+    }
+    
+    // Extract time from timestamp for time input field
+    function formatTimeFromTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
     }
     
     // Show alert message

@@ -37,6 +37,7 @@ class ExpenseUpdate(BaseModel):
     category: Optional[str] = None
     description: Optional[str] = None
     date: Optional[str] = None
+    time: Optional[str] = None
 
 class SummaryResponse(BaseModel):
     total_expense: float
@@ -79,7 +80,8 @@ async def update_expense(expense_id: int, expense_update: ExpenseUpdate, db: Ses
         amount=expense_update.amount,
         category=expense_update.category,
         description=expense_update.description,
-        expense_date=expense_update.date
+        expense_date=expense_update.date,
+        expense_time=expense_update.time
     )
     if not updated_expense:
         raise HTTPException(status_code=404, detail="Expense not found")

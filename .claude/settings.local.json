@@ -12,7 +12,8 @@
       "Bash(pip install:*)",
       "Bash(python:*)",
       "Bash(docker-compose up:*)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []

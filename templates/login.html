@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - 일본 여행 경비 추적기</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 480px;
+            margin: 2rem;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-header i {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        .login-header h1 {
+            color: #333;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .login-header p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        .footer-text {
+            text-align: center;
+            margin-top: 2rem;
+            color: #666;
+            font-size: 0.85rem;
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        .telegram-help {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .telegram-help h6 {
+            color: #1976d2;
+            margin-bottom: 0.5rem;
+        }
+        .telegram-help p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #424242;
+        }
+        .code-input {
+            text-align: center;
+            font-size: 1.5rem;
+            letter-spacing: 0.5rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <i class="fab fa-telegram-plane"></i>
+            <h1>일본 여행 경비</h1>
+            <p>텔레그램으로 간편하게 로그인하세요</p>
+        </div>
+
+        <div id="alerts"></div>
+
+        <!-- Step 1: Chat ID Input -->
+        <div id="step1" class="step active">
+            <div class="telegram-help">
+                <h6><i class="fas fa-info-circle me-1"></i>텔레그램 Chat ID 찾는 방법:</h6>
+                <p>1. 텔레그램에서 <strong>@userinfobot</strong>을 검색</p>
+                <p>2. 봇에게 <strong>/start</strong> 명령어 전송</p>
+                <p>3. 표시된 Chat ID를 복사하여 아래에 입력</p>
+            </div>
+
+            <form id="chatid-form">
+                <div class="mb-3">
+                    <label for="chatid" class="form-label">텔레그램 Chat ID</label>
+                    <div class="input-group">
+                        <span class="input-group-text" style="border-radius: 10px 0 0 10px; border: 2px solid #e9ecef; border-right: none; background: #f8f9fa;">
+                            <i class="fab fa-telegram-plane text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control" id="chatid" placeholder="123456789" required
+                               style="border-radius: 0 10px 10px 0; border-left: none;">
+                    </div>
+                    <div class="form-text">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Chat ID로 로그인 코드가 전송됩니다
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-login w-100">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    <span id="btn-text">로그인 코드 받기</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Step 2: Code Input -->
+        <div id="step2" class="step">
+            <div class="text-center mb-3">
+                <i class="fas fa-mobile-alt" style="font-size: 2rem; color: #667eea;"></i>
+                <h5 class="mt-2">코드를 입력하세요</h5>
+                <p class="text-muted">텔레그램으로 전송된 6자리 코드를 입력하세요</p>
+            </div>
+
+            <form id="code-form">
+                <div class="mb-3">
+                    <input type="text" class="form-control code-input" id="code" placeholder="000000" 
+                           maxlength="6" required pattern="[0-9]{6}">
+                    <div class="form-text text-center">
+                        <i class="fas fa-clock me-1"></i>
+                        코드는 15분 후 만료됩니다
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-login w-100">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    <span id="verify-btn-text">로그인</span>
+                </button>
+
+                <button type="button" class="btn btn-link w-100 mt-2" id="back-btn">
+                    <i class="fas fa-arrow-left me-1"></i>
+                    다시 코드 요청
+                </button>
+            </form>
+        </div>
+
+        <div class="footer-text">
+            <i class="fab fa-telegram-plane me-1"></i>
+            안전한 텔레그램 봇 인증
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            let currentChatId = '';
+
+            // Check for error parameter in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            
+            if (error === 'invalid_token') {
+                showAlert('로그인 코드가 만료되었거나 유효하지 않습니다. 다시 시도해주세요.', 'danger');
+            }
+            
+            // Step 1: Request login code
+            $('#chatid-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                const chatId = $('#chatid').val().trim();
+                
+                if (!chatId) {
+                    showAlert('텔레그램 Chat ID를 입력해주세요.', 'warning');
+                    return;
+                }
+
+                // Validate chat ID format (should be numeric)
+                if (!/^\d+$/.test(chatId)) {
+                    showAlert('Chat ID는 숫자만 입력해주세요.', 'warning');
+                    return;
+                }
+                
+                currentChatId = chatId;
+                
+                // Show loading state
+                const submitBtn = $('#chatid-form button[type="submit"]');
+                const btnText = $('#btn-text');
+                const originalText = btnText.text();
+                
+                submitBtn.prop('disabled', true);
+                btnText.html('<span class="spinner-border spinner-border-sm me-2"></span>전송 중...');
+                
+                // Send login request
+                $.ajax({
+                    url: '/api/auth/login',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        telegram_chat_id: chatId
+                    }),
+                    success: function(response) {
+                        showAlert(response.message, 'success');
+                        showStep2();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Login request failed:', error);
+                        let errorMessage = '로그인 요청 중 오류가 발생했습니다.';
+                        
+                        if (xhr.responseJSON && xhr.responseJSON.detail) {
+                            errorMessage = xhr.responseJSON.detail;
+                        }
+                        
+                        showAlert(errorMessage, 'danger');
+                        btnText.text(originalText);
+                        submitBtn.prop('disabled', false);
+                    }
+                });
+            });
+
+            // Step 2: Verify code
+            $('#code-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                const code = $('#code').val().trim();
+                
+                if (!code || code.length !== 6) {
+                    showAlert('6자리 코드를 입력해주세요.', 'warning');
+                    return;
+                }
+                
+                // Show loading state
+                const submitBtn = $('#code-form button[type="submit"]');
+                const btnText = $('#verify-btn-text');
+                const originalText = btnText.text();
+                
+                submitBtn.prop('disabled', true);
+                btnText.html('<span class="spinner-border spinner-border-sm me-2"></span>확인 중...');
+                
+                // Verify code
+                $.ajax({
+                    url: '/api/auth/verify',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        code: code
+                    }),
+                    success: function(response) {
+                        showAlert('로그인 성공! 메인 페이지로 이동합니다.', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Code verification failed:', error);
+                        let errorMessage = '코드 확인 중 오류가 발생했습니다.';
+                        
+                        if (xhr.responseJSON && xhr.responseJSON.detail) {
+                            errorMessage = xhr.responseJSON.detail;
+                        }
+                        
+                        showAlert(errorMessage, 'danger');
+                        btnText.text(originalText);
+                        submitBtn.prop('disabled', false);
+                    }
+                });
+            });
+
+            // Back button
+            $('#back-btn').on('click', function() {
+                showStep1();
+            });
+
+            // Auto-format code input
+            $('#code').on('input', function() {
+                let value = $(this).val().replace(/\D/g, '');
+                $(this).val(value);
+            });
+            
+            function showStep1() {
+                $('#step1').addClass('active');
+                $('#step2').removeClass('active');
+                $('#chatid-form button').prop('disabled', false);
+                $('#btn-text').text('로그인 코드 받기');
+            }
+
+            function showStep2() {
+                $('#step1').removeClass('active');
+                $('#step2').addClass('active');
+                $('#code').focus();
+            }
+            
+            function showAlert(message, type) {
+                const alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                
+                $('#alerts').html(alertHtml);
+                
+                // Auto-hide success alerts after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        $('.alert').fadeOut();
+                    }, 5000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

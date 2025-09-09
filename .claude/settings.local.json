@@ -13,7 +13,12 @@
       "Bash(python:*)",
       "Bash(docker-compose up:*)",
       "Bash(docker compose:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(git checkout:*)",
+      "Bash(uvicorn:*)",
+      "Bash(curl:*)",
+      "Bash(rm:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

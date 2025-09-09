@@ -31,6 +31,24 @@
                         <li class="nav-item">
                             <a class="nav-link" href="#"><i class="fas fa-chart-bar me-1"></i>통계</a>
                         </li>
+                        {% if user %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fab fa-telegram-plane me-1"></i>{{ user.telegram_chat_id }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" id="logout-btn">
+                                    <i class="fas fa-sign-out-alt me-2"></i>로그아웃
+                                </a></li>
+                            </ul>
+                        </li>
+                        {% else %}
+                        <li class="nav-item">
+                            <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">
+                                <i class="fab fa-telegram-plane me-1"></i>로그인
+                            </button>
+                        </li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
@@ -40,27 +58,13 @@
         <div class="container mt-4">
             <div class="row">
                 <!-- Summary Cards -->
-                <div class="col-12 col-md-6 col-lg-3 mb-3">
-                    <div class="card text-white bg-success">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">총 예산</h6>
-                                    <h4 id="total-budget">¥0</h4>
-                                </div>
-                                <i class="fas fa-wallet fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                <div class="col-12 col-md-6 mb-3">
                     <div class="card text-white bg-danger">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6 class="card-title">총 지출</h6>
-                                    <h4 id="total-expense">¥0</h4>
+                                    <h4 id="total-expense">₩0</h4>
                                 </div>
                                 <i class="fas fa-credit-card fa-2x"></i>
                             </div>
@@ -68,27 +72,13 @@
                     </div>
                 </div>
                 
-                <div class="col-12 col-md-6 col-lg-3 mb-3">
-                    <div class="card text-white bg-info">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">남은 예산</h6>
-                                    <h4 id="remaining-budget">¥0</h4>
-                                </div>
-                                <i class="fas fa-piggy-bank fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                <div class="col-12 col-md-6 mb-3">
                     <div class="card text-white bg-warning">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6 class="card-title">오늘 지출</h6>
-                                    <h4 id="today-expense">¥0</h4>
+                                    <h4 id="today-expense">₩0</h4>
                                 </div>
                                 <i class="fas fa-calendar-day fa-2x"></i>
                             </div>
@@ -98,6 +88,7 @@
             </div>
 
             <!-- Add Expense Form -->
+            {% if user %}
             <div class="row mt-4">
                 <div class="col-12">
                     <div class="card">
@@ -108,22 +99,32 @@
                             <form id="expense-form">
                                 <div class="row">
                                     <div class="col-12 col-md-6 mb-3">
-                                        <label for="amount" class="form-label">금액 (¥)</label>
-                                        <input type="number" class="form-control" id="amount" required>
-                                    </div>
-                                    <div class="col-12 col-md-6 mb-3">
                                         <label for="category" class="form-label">카테고리</label>
                                         <select class="form-select" id="category" required>
                                             <option value="">선택하세요</option>
                                             <option value="food">식비</option>
                                             <option value="transport">교통비</option>
                                             <option value="accommodation">숙박비</option>
-                                            <option value="shopping">쇼핑</option>
-                                            <option value="entertainment">오락</option>
+                                            <option value="admission">입장료</option>
                                             <option value="other">기타</option>
                                         </select>
                                     </div>
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 mb-3">
+                                        <label for="payment-method" class="form-label">결제 수단</label>
+                                        <select class="form-select" id="payment-method" required>
+                                            <option value="현금">현금</option>
+                                            <option value="체크카드">체크카드</option>
+                                            <option value="신용카드">신용카드</option>
+                                            <option value="교통카드">교통카드</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 col-md-6 mb-3">
+                                        <label for="amount" class="form-label">금액 (₩)</label>
+                                        <input type="number" class="form-control" id="amount" required>
+                                    </div>
+                                    <div class="col-12 col-md-6 mb-3">
                                         <label for="description" class="form-label">설명</label>
                                         <input type="text" class="form-control" id="description" placeholder="지출 내용을 입력하세요">
                                     </div>
@@ -138,6 +139,16 @@
                     </div>
                 </div>
             </div>
+            {% else %}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        <i class="fab fa-telegram-plane me-2"></i>
+                        지출을 추가하려면 <button class="btn btn-sm btn-primary ms-1" data-bs-toggle="modal" data-bs-target="#loginModal">로그인</button>하세요.
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Expense List -->
             <div class="row mt-4">
@@ -157,10 +168,88 @@
         </div>
     </div>
 
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fab fa-telegram-plane me-2"></i>텔레그램 로그인
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="login-alerts"></div>
+                    
+                    <!-- Step 1: Request Code -->
+                    <div id="login-step1">
+                        <div class="text-center mb-3">
+                            <i class="fab fa-telegram-plane" style="font-size: 3rem; color: #0088cc;"></i>
+                            <p class="mt-2 text-muted">이메일을 입력하여 텔레그램으로 로그인하세요</p>
+                        </div>
+                        
+                        <form id="email-form">
+                            <div class="mb-3">
+                                <label for="login-email" class="form-label">이메일 주소</label>
+                                <input type="email" class="form-control" id="login-email" 
+                                       placeholder="이메일 주소를 입력하세요" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100" id="request-login-btn">
+                                <i class="fas fa-paper-plane me-2"></i>
+                                <span id="request-btn-text">로그인 코드 받기</span>
+                            </button>
+                        </form>
+                        
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <small><strong>보안 알림:</strong> 여러 번 실패 시 일정 시간 접속이 제한됩니다.</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: Enter Code -->
+                    <div id="login-step2" style="display: none;">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-mobile-alt" style="font-size: 2rem; color: #0088cc;"></i>
+                            <h6 class="mt-2">코드를 입력하세요</h6>
+                            <p class="text-muted">텔레그램으로 전송된 6자리 코드를 입력하세요</p>
+                        </div>
+                        
+                        <form id="login-code-form">
+                            <div class="mb-3">
+                                <input type="text" class="form-control text-center" id="login-code" 
+                                       placeholder="000000" maxlength="6" required pattern="[0-9]{6}"
+                                       style="font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: 600;">
+                                <div class="form-text text-center">
+                                    <i class="fas fa-clock me-1"></i>코드는 15분 후 만료됩니다
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                <span id="verify-btn-text">로그인</span>
+                            </button>
+                            
+                            <button type="button" class="btn btn-link w-100 mt-2" id="back-to-step1">
+                                <i class="fas fa-arrow-left me-1"></i>다시 코드 요청
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- User data for JavaScript -->
+    <script>
+        window.currentUser = {% if user %}{{ user.telegram_chat_id | tojson }}{% else %}null{% endif %};
+    </script>
+    
     <!-- Custom JS -->
     <script src="/static/js/app.js"></script>
 </body>

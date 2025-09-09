@@ -53,8 +53,7 @@ body {
 .category-food { border-left-color: #28a745 !important; }
 .category-transport { border-left-color: #007bff !important; }
 .category-accommodation { border-left-color: #6f42c1 !important; }
-.category-shopping { border-left-color: #fd7e14 !important; }
-.category-entertainment { border-left-color: #e83e8c !important; }
+.category-admission { border-left-color: #fd7e14 !important; }
 .category-other { border-left-color: #6c757d !important; }
 
 .form-control:focus, .form-select:focus {

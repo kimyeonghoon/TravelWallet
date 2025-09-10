@@ -18,7 +18,10 @@
       "Bash(uvicorn:*)",
       "Bash(curl:*)",
       "Bash(rm:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(for i in {2..5})",
+      "Bash(do echo \"=== 시도 $i ===\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

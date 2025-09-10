@@ -144,6 +144,17 @@ async def read_root(
         "user": current_user
     })
 
+@app.get("/statistics", response_class=HTMLResponse)
+async def statistics_page(
+    request: Request,
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """Statistics dashboard page accessible to all users."""
+    return templates.TemplateResponse("statistics.html", {
+        "request": request,
+        "user": current_user
+    })
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "message": "Japan Travel Expense API is running"}
@@ -329,6 +340,11 @@ async def get_summary(db: Session = Depends(get_db)):
         total_expense=total_expense,
         today_expense=today_expense
     )
+
+@app.get("/api/statistics")
+async def get_statistics(db: Session = Depends(get_db)):
+    """Get comprehensive statistics for dashboard."""
+    return ExpenseService.get_statistics(db)
 
 if __name__ == "__main__":
     import uvicorn

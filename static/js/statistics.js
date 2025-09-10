@@ -1,0 +1,441 @@
+$(document).ready(function() {
+    // Initialize statistics dashboard
+    loadStatistics();
+    
+    function loadStatistics() {
+        $.ajax({
+            url: '/api/statistics',
+            method: 'GET',
+            success: function(data) {
+                console.log('Statistics data:', data);
+                populateSummaryCards(data);
+                createCharts(data);
+                populateTopExpenses(data.top_expenses);
+                
+                // Hide loading and show content
+                $('#loading-state').hide();
+                $('#statistics-content').show();
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading statistics:', error);
+                $('#loading-state').html(`
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle text-danger fa-3x mb-3"></i>
+                        <p class="text-danger">통계 데이터를 불러올 수 없습니다.</p>
+                        <button class="btn btn-primary" onclick="location.reload()">다시 시도</button>
+                    </div>
+                `);
+            }
+        });
+    }
+    
+    function populateSummaryCards(data) {
+        $('#total-amount').text(`₩${data.total_amount.toLocaleString()}`);
+        $('#expense-count').text(`${data.expense_count}건`);
+        $('#avg-daily').text(`₩${data.avg_daily.toLocaleString()}`);
+        $('#total-days').text(`${data.total_days}일`);
+    }
+    
+    function createCharts(data) {
+        createCategoryChart(data.category_stats);
+        createPaymentChart(data.payment_method_stats);
+        createDailyChart(data.daily_stats);
+        createWeeklyChart(data.weekly_stats);
+    }
+    
+    function createCategoryChart(categoryStats) {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        
+        const categories = Object.keys(categoryStats);
+        const amounts = categories.map(cat => categoryStats[cat].amount);
+        
+        const categoryNames = {
+            'food': '식비',
+            'transport': '교통비',
+            'accommodation': '숙박비',
+            'admission': '입장료',
+            'other': '기타'
+        };
+        
+        const labels = categories.map(cat => categoryNames[cat] || cat);
+        const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: amounts,
+                    backgroundColor: colors.slice(0, categories.length),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${context.label}: ₩${value.toLocaleString()} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function createPaymentChart(paymentStats) {
+        const ctx = document.getElementById('paymentChart').getContext('2d');
+        
+        const methods = Object.keys(paymentStats);
+        const amounts = methods.map(method => paymentStats[method].amount);
+        
+        const colors = ['#FF9F40', '#FF6384', '#4BC0C0', '#36A2EB'];
+        
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: methods,
+                datasets: [{
+                    data: amounts,
+                    backgroundColor: colors.slice(0, methods.length),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${context.label}: ₩${value.toLocaleString()} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function createDailyChart(dailyStats) {
+        const ctx = document.getElementById('dailyChart').getContext('2d');
+        
+        const dates = dailyStats.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+        });
+        const amounts = dailyStats.map(item => item.amount);
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: '일별 지출',
+                    data: amounts,
+                    borderColor: '#36A2EB',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#36A2EB',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₩' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `지출: ₩${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function createWeeklyChart(weeklyStats) {
+        const ctx = document.getElementById('weeklyChart').getContext('2d');
+        
+        // Order by day of week
+        const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+        
+        const orderedData = dayOrder.map(day => weeklyStats[day] || 0);
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dayNames,
+                datasets: [{
+                    label: '요일별 지출',
+                    data: orderedData,
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                        '#9966FF', '#FF9F40', '#FF6384'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₩' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `지출: ₩${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function populateTopExpenses(topExpenses) {
+        const container = $('#top-expenses-list');
+        
+        if (!topExpenses || topExpenses.length === 0) {
+            container.html('<p class="text-muted text-center">지출 데이터가 없습니다.</p>');
+            return;
+        }
+        
+        const categoryNames = {
+            'food': '식비',
+            'transport': '교통비',
+            'accommodation': '숙박비',
+            'admission': '입장료',
+            'other': '기타'
+        };
+        
+        const categoryColors = {
+            'food': 'success',
+            'transport': 'primary',
+            'accommodation': 'secondary',
+            'admission': 'warning',
+            'other': 'info'
+        };
+        
+        let html = '';
+        topExpenses.slice(0, 5).forEach((expense, index) => {
+            const categoryName = categoryNames[expense.category] || expense.category;
+            const badgeColor = categoryColors[expense.category] || 'secondary';
+            
+            html += `
+                <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                    <div>
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="badge bg-${badgeColor} me-2">${index + 1}</span>
+                            <strong class="me-2">₩${expense.amount.toLocaleString()}</strong>
+                            <span class="badge bg-outline-${badgeColor}">${categoryName}</span>
+                        </div>
+                        <small class="text-muted">
+                            ${expense.description} • ${expense.payment_method} • ${expense.date}
+                        </small>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.html(html);
+    }
+    
+    // Handle logout
+    $('#logout-btn').on('click', function(e) {
+        e.preventDefault();
+        if (confirm('로그아웃 하시겠습니까?')) {
+            $.ajax({
+                url: '/api/auth/logout',
+                method: 'POST',
+                success: function() {
+                    window.location.href = '/';
+                },
+                error: function() {
+                    window.location.href = '/';
+                }
+            });
+        }
+    });
+    
+    // Login modal functionality
+    $('#email-form').on('submit', handleLoginRequest);
+    $('#login-code-form').on('submit', handleLoginCodeSubmit);
+    $('#back-to-step1').on('click', showLoginStep1);
+    $('#login-code').on('input', formatLoginCode);
+    
+    function handleLoginRequest(e) {
+        e.preventDefault();
+        
+        const email = $('#login-email').val().trim();
+        
+        if (!email) {
+            showLoginAlert('이메일 주소를 입력해주세요.', 'warning');
+            return;
+        }
+        
+        const submitBtn = $('#request-login-btn');
+        const btnText = $('#request-btn-text');
+        const originalText = btnText.text();
+        
+        submitBtn.prop('disabled', true);
+        btnText.html('<span class="spinner-border spinner-border-sm me-2"></span>전송 중...');
+        
+        $.ajax({
+            url: '/api/auth/login',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                email: email
+            }),
+            success: function(response) {
+                showLoginAlert(response.message, 'success');
+                showLoginStep2();
+            },
+            error: function(xhr, status, error) {
+                console.error('Login request failed:', error);
+                let errorMessage = '로그인 요청 중 오류가 발생했습니다.';
+                
+                if (xhr.responseJSON && xhr.responseJSON.detail) {
+                    errorMessage = xhr.responseJSON.detail;
+                }
+                
+                showLoginAlert(errorMessage, 'danger');
+                btnText.text(originalText);
+                submitBtn.prop('disabled', false);
+            }
+        });
+    }
+    
+    function handleLoginCodeSubmit(e) {
+        e.preventDefault();
+        
+        const code = $('#login-code').val().trim();
+        
+        if (!code || code.length !== 6) {
+            showLoginAlert('6자리 코드를 입력해주세요.', 'warning');
+            return;
+        }
+        
+        const submitBtn = $('#login-code-form button[type="submit"]');
+        const btnText = $('#verify-btn-text');
+        const originalText = btnText.text();
+        
+        submitBtn.prop('disabled', true);
+        btnText.html('<span class="spinner-border spinner-border-sm me-2"></span>확인 중...');
+        
+        $.ajax({
+            url: '/api/auth/verify',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                code: code
+            }),
+            success: function(response) {
+                showLoginAlert('로그인 성공! 페이지를 새로고침합니다.', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            },
+            error: function(xhr, status, error) {
+                console.error('Code verification failed:', error);
+                let errorMessage = '코드 확인 중 오류가 발생했습니다.';
+                
+                if (xhr.responseJSON && xhr.responseJSON.detail) {
+                    errorMessage = xhr.responseJSON.detail;
+                }
+                
+                showLoginAlert(errorMessage, 'danger');
+                btnText.text(originalText);
+                submitBtn.prop('disabled', false);
+            }
+        });
+    }
+    
+    function showLoginStep1() {
+        $('#login-step1').show();
+        $('#login-step2').hide();
+        $('#request-login-btn').prop('disabled', false);
+        $('#request-btn-text').text('로그인 코드 받기');
+        $('#login-code').val('');
+        $('#login-email').val('');
+    }
+    
+    function showLoginStep2() {
+        $('#login-step1').hide();
+        $('#login-step2').show();
+        $('#login-code').focus();
+    }
+    
+    function formatLoginCode() {
+        let value = $(this).val().replace(/\D/g, '');
+        $(this).val(value);
+    }
+    
+    function showLoginAlert(message, type) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        $('#login-alerts').html(alertHtml);
+        
+        if (type === 'success') {
+            setTimeout(() => {
+                $('.alert').fadeOut();
+            }, 5000);
+        }
+    }
+});

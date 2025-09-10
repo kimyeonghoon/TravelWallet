@@ -111,6 +111,91 @@ class ExpenseService:
         return query.all()
     
     @staticmethod
+    def get_statistics(db: Session) -> dict:
+        """Get comprehensive statistics for dashboard."""
+        from collections import defaultdict
+        
+        # Get all expenses
+        expenses = db.query(Expense).all()
+        
+        if not expenses:
+            return {
+                "category_stats": {},
+                "payment_method_stats": {},
+                "daily_stats": [],
+                "monthly_stats": [],
+                "weekly_stats": {},
+                "top_expenses": [],
+                "avg_daily": 0,
+                "total_days": 0,
+                "expense_count": 0
+            }
+        
+        # Category statistics
+        category_stats = defaultdict(lambda: {"count": 0, "amount": 0})
+        for expense in expenses:
+            category_stats[expense.category]["count"] += 1
+            category_stats[expense.category]["amount"] += expense.amount
+        
+        # Payment method statistics  
+        payment_method_stats = defaultdict(lambda: {"count": 0, "amount": 0})
+        for expense in expenses:
+            payment_method_stats[expense.payment_method]["count"] += 1
+            payment_method_stats[expense.payment_method]["amount"] += expense.amount
+        
+        # Daily statistics (last 30 days)
+        daily_stats = defaultdict(float)
+        for expense in expenses:
+            daily_stats[expense.date] += expense.amount
+        
+        # Convert to list of dicts sorted by date
+        daily_list = [{"date": date, "amount": amount} for date, amount in sorted(daily_stats.items())]
+        
+        # Monthly statistics
+        monthly_stats = defaultdict(float)
+        for expense in expenses:
+            month_key = expense.date[:7]  # YYYY-MM
+            monthly_stats[month_key] += expense.amount
+        
+        monthly_list = [{"month": month, "amount": amount} for month, amount in sorted(monthly_stats.items())]
+        
+        # Weekly statistics (day of week)
+        from datetime import datetime
+        weekly_stats = defaultdict(float)
+        for expense in expenses:
+            expense_date = datetime.strptime(expense.date, "%Y-%m-%d")
+            day_name = expense_date.strftime("%A")
+            weekly_stats[day_name] += expense.amount
+        
+        # Top 10 expenses
+        top_expenses = sorted(expenses, key=lambda x: x.amount, reverse=True)[:10]
+        top_expenses_list = [{
+            "amount": exp.amount,
+            "category": exp.category,
+            "description": exp.description,
+            "date": exp.date,
+            "payment_method": exp.payment_method
+        } for exp in top_expenses]
+        
+        # Calculate averages
+        unique_dates = len(set(exp.date for exp in expenses))
+        total_amount = sum(exp.amount for exp in expenses)
+        avg_daily = total_amount / unique_dates if unique_dates > 0 else 0
+        
+        return {
+            "category_stats": dict(category_stats),
+            "payment_method_stats": dict(payment_method_stats),
+            "daily_stats": daily_list,
+            "monthly_stats": monthly_list,
+            "weekly_stats": dict(weekly_stats),
+            "top_expenses": top_expenses_list,
+            "avg_daily": round(avg_daily, 2),
+            "total_days": unique_dates,
+            "expense_count": len(expenses),
+            "total_amount": total_amount
+        }
+    
+    @staticmethod
     def update_expense(db: Session, expense_id: int, amount: float = None, 
                       category: str = None, description: str = None, 
                       expense_date: str = None, expense_time: str = None,

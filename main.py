@@ -227,10 +227,7 @@ async def verify_login_code(code_data: LoginCodeRequest, db: Session = Depends(g
     return response
 
 
-@app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    """Show login page."""
-    return templates.TemplateResponse("login.html", {"request": request})
+# Removed login page route - login is now handled via modal in main page
 
 @app.post("/api/auth/logout")
 async def logout():

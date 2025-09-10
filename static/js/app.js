@@ -339,13 +339,13 @@ $(document).ready(function() {
                 success: function(response) {
                     showAlert('로그아웃되었습니다.', 'info');
                     setTimeout(() => {
-                        window.location.href = '/login';
+                        window.location.reload(); // Reload main page to show login state
                     }, 1000);
                 },
                 error: function(xhr, status, error) {
                     console.error('Logout error:', error);
-                    // Redirect to login even if logout API fails
-                    window.location.href = '/login';
+                    // Reload page even if logout API fails to clear state
+                    window.location.reload();
                 }
             });
         }

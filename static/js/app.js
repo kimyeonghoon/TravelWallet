@@ -12,6 +12,10 @@ $(document).ready(function() {
         $(document).on('click', '.edit-expense', handleExpenseEdit);
         $('#logout-btn').on('click', handleLogout);
         
+        // Filter and sort event listeners
+        $('#apply-filters').on('click', applyFilters);
+        $('#clear-filters').on('click', clearFilters);
+        
         // Login modal event listeners
         $('#email-form').on('submit', handleLoginRequest);
         $('#login-code-form').on('submit', handleLoginCodeSubmit);
@@ -68,15 +72,30 @@ $(document).ready(function() {
     }
     
     // Load and display expenses from API
-    function loadExpenses() {
+    function loadExpenses(filters = {}) {
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (filters.category) params.append('category', filters.category);
+        if (filters.payment_method) params.append('payment_method', filters.payment_method);
+        if (filters.date_from) params.append('date_from', filters.date_from);
+        if (filters.date_to) params.append('date_to', filters.date_to);
+        if (filters.sort_by) params.append('sort_by', filters.sort_by);
+        if (filters.sort_order) params.append('sort_order', filters.sort_order);
+        
+        // Add cache busting
+        params.append('_t', new Date().getTime());
+        
         $.ajax({
-            url: '/api/expenses?' + new Date().getTime(), // Cache busting
+            url: '/api/expenses?' + params.toString(),
             method: 'GET',
             success: function(expenses) {
                 const expenseList = $('#expense-list');
                 
                 if (expenses.length === 0) {
-                    expenseList.html('<p class="text-muted text-center">아직 지출 내역이 없습니다.</p>');
+                    const message = Object.keys(filters).length > 0 ? 
+                        '<p class="text-muted text-center">필터 조건에 맞는 지출 내역이 없습니다.</p>' :
+                        '<p class="text-muted text-center">아직 지출 내역이 없습니다.</p>';
+                    expenseList.html(message);
                     return;
                 }
                 
@@ -499,6 +518,56 @@ $(document).ready(function() {
                 $('.alert').fadeOut();
             }, 5000);
         }
+    }
+
+    // Filter and sort functions
+    function applyFilters() {
+        const filters = {};
+        
+        // Get filter values
+        const category = $('#filter-category').val();
+        const paymentMethod = $('#filter-payment').val();
+        const dateFrom = $('#filter-date-from').val();
+        const dateTo = $('#filter-date-to').val();
+        const sortBy = $('#sort-by').val();
+        const sortOrder = $('#sort-order').val();
+        
+        // Build filters object
+        if (category) filters.category = category;
+        if (paymentMethod) filters.payment_method = paymentMethod;
+        if (dateFrom) filters.date_from = dateFrom;
+        if (dateTo) filters.date_to = dateTo;
+        if (sortBy) filters.sort_by = sortBy;
+        if (sortOrder && sortBy) filters.sort_order = sortOrder;
+        
+        // Validate date range
+        if (dateFrom && dateTo && dateFrom > dateTo) {
+            showAlert('시작일이 종료일보다 늦을 수 없습니다.', 'warning');
+            return;
+        }
+        
+        // Apply filters
+        loadExpenses(filters);
+        
+        // Show success message if filters are applied
+        if (Object.keys(filters).length > 0) {
+            showAlert('필터가 적용되었습니다.', 'success');
+        }
+    }
+    
+    function clearFilters() {
+        // Clear all filter inputs
+        $('#filter-category').val('');
+        $('#filter-payment').val('');
+        $('#filter-date-from').val('');
+        $('#filter-date-to').val('');
+        $('#sort-by').val('');
+        $('#sort-order').val('desc');
+        
+        // Reload all expenses
+        loadExpenses();
+        
+        showAlert('필터가 초기화되었습니다.', 'info');
     }
 
     // Handle authentication errors globally

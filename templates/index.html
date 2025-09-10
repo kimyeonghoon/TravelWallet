@@ -155,8 +155,82 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5><i class="fas fa-list me-2"></i>지출 내역</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-list me-2"></i>지출 내역</h5>
+                                <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                                    <i class="fas fa-filter me-1"></i>필터/정렬
+                                </button>
+                            </div>
                         </div>
+                        
+                        <!-- Filter/Sort Controls -->
+                        <div class="collapse" id="filterCollapse">
+                            <div class="card-body border-bottom">
+                                <div class="row g-3">
+                                    <!-- Filter Controls -->
+                                    <div class="col-12 col-md-6 col-lg-3">
+                                        <label for="filter-category" class="form-label">카테고리</label>
+                                        <select class="form-select form-select-sm" id="filter-category">
+                                            <option value="">전체</option>
+                                            <option value="food">식비</option>
+                                            <option value="transport">교통비</option>
+                                            <option value="accommodation">숙박비</option>
+                                            <option value="admission">입장료</option>
+                                            <option value="other">기타</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6 col-lg-3">
+                                        <label for="filter-payment" class="form-label">결제수단</label>
+                                        <select class="form-select form-select-sm" id="filter-payment">
+                                            <option value="">전체</option>
+                                            <option value="현금">현금</option>
+                                            <option value="체크카드">체크카드</option>
+                                            <option value="신용카드">신용카드</option>
+                                            <option value="교통카드">교통카드</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6 col-lg-3">
+                                        <label for="filter-date-from" class="form-label">시작일</label>
+                                        <input type="date" class="form-control form-control-sm" id="filter-date-from">
+                                    </div>
+                                    <div class="col-12 col-md-6 col-lg-3">
+                                        <label for="filter-date-to" class="form-label">종료일</label>
+                                        <input type="date" class="form-control form-control-sm" id="filter-date-to">
+                                    </div>
+                                    
+                                    <!-- Sort Controls -->
+                                    <div class="col-12 col-md-6 col-lg-3">
+                                        <label for="sort-by" class="form-label">정렬 기준</label>
+                                        <select class="form-select form-select-sm" id="sort-by">
+                                            <option value="">기본 (최신순)</option>
+                                            <option value="date">날짜</option>
+                                            <option value="amount">금액</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6 col-lg-3">
+                                        <label for="sort-order" class="form-label">정렬 순서</label>
+                                        <select class="form-select form-select-sm" id="sort-order">
+                                            <option value="desc">내림차순</option>
+                                            <option value="asc">오름차순</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="col-12 col-lg-6">
+                                        <label class="form-label">&nbsp;</label>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-primary btn-sm" id="apply-filters">
+                                                <i class="fas fa-search me-1"></i>적용
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="clear-filters">
+                                                <i class="fas fa-times me-1"></i>초기화
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="card-body">
                             <div id="expense-list">
                                 <p class="text-muted text-center">아직 지출 내역이 없습니다.</p>

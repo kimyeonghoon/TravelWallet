@@ -266,9 +266,31 @@ async def create_expense(expense: ExpenseCreate, current_user: User = Depends(re
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/expenses", response_model=List[ExpenseResponse])
-async def get_expenses(db: Session = Depends(get_db)):
-    """Get all expenses - public access for expense viewing."""
-    expenses = ExpenseService.get_all_expenses(db)
+async def get_expenses(
+    category: Optional[str] = None,
+    payment_method: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    sort_order: Optional[str] = "desc",
+    db: Session = Depends(get_db)
+):
+    """Get expenses with optional filters and sorting - public access for expense viewing."""
+    if any([category, payment_method, date_from, date_to, sort_by]):
+        # Use filtered query
+        expenses = ExpenseService.get_filtered_expenses(
+            db=db,
+            category=category,
+            payment_method=payment_method,
+            date_from=date_from,
+            date_to=date_to,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+    else:
+        # Use existing method for backward compatibility
+        expenses = ExpenseService.get_all_expenses(db)
+    
     return [ExpenseResponse(**expense.to_dict()) for expense in expenses]
 
 @app.put("/api/expenses/{expense_id}", response_model=ExpenseResponse)

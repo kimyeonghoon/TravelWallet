@@ -68,6 +68,49 @@ class ExpenseService:
         return result if result else 0.0
     
     @staticmethod
+    def get_filtered_expenses(
+        db: Session, 
+        category: Optional[str] = None,
+        payment_method: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        sort_order: Optional[str] = "desc"
+    ) -> List[Expense]:
+        """Get expenses with optional filters and sorting."""
+        query = db.query(Expense)
+        
+        # Apply filters
+        if category:
+            query = query.filter(Expense.category == category)
+        
+        if payment_method:
+            query = query.filter(Expense.payment_method == payment_method)
+        
+        if date_from:
+            query = query.filter(Expense.date >= date_from)
+        
+        if date_to:
+            query = query.filter(Expense.date <= date_to)
+        
+        # Apply sorting
+        if sort_by == "date":
+            if sort_order == "asc":
+                query = query.order_by(Expense.date.asc(), Expense.timestamp.asc())
+            else:
+                query = query.order_by(Expense.date.desc(), Expense.timestamp.desc())
+        elif sort_by == "amount":
+            if sort_order == "asc":
+                query = query.order_by(Expense.amount.asc())
+            else:
+                query = query.order_by(Expense.amount.desc())
+        else:
+            # Default sorting: newest first
+            query = query.order_by(Expense.timestamp.desc())
+        
+        return query.all()
+    
+    @staticmethod
     def update_expense(db: Session, expense_id: int, amount: float = None, 
                       category: str = None, description: str = None, 
                       expense_date: str = None, expense_time: str = None,

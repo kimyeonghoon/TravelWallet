@@ -6,8 +6,8 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Python 환경 변수 설정
-ENV PYTHONDONTWRITEBYTECODE=1  # Python이 .pyc 파일을 생성하지 않도록 설정
-ENV PYTHONUNBUFFERED=1         # Python 출력을 버퍼링하지 않고 즉시 출력
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # 시스템 의존성 패키지 설치
 # gcc: SQLAlchemy 컴파일에 필요
@@ -31,6 +31,10 @@ RUN pip install --no-cache-dir --upgrade pip \
 # 애플리케이션 소스코드를 컨테이너로 복사
 # .dockerignore 파일에 의해 불필요한 파일은 제외됨
 COPY . .
+
+# Ensure static files directory exists and has proper permissions
+RUN mkdir -p /app/static/css /app/static/js \
+    && chmod -R 755 /app/static
 
 # SQLite 데이터베이스 파일을 저장할 디렉토리 생성
 # Docker 볼륨과 연결되어 데이터 영속성 보장

@@ -7,6 +7,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
+import os
 
 from models import create_tables, get_db, User
 from database import ExpenseService
@@ -17,8 +18,19 @@ create_tables()
 
 app = FastAPI(title="Japan Travel Expense Tracker")
 
-# Static files and templates
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Add CORS middleware for nginx proxy compatibility
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure as needed for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Static files and templates - with proper directory handling
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+app.mount("/static", StaticFiles(directory=static_dir, html=True), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Pydantic models for API
@@ -135,6 +147,32 @@ async def read_root(
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "message": "Japan Travel Expense API is running"}
+
+# Add explicit static file handling for nginx compatibility
+from fastapi.responses import FileResponse
+import mimetypes
+
+@app.get("/static/{file_path:path}")
+async def serve_static_files(file_path: str):
+    """Serve static files with proper MIME types for nginx compatibility."""
+    full_path = os.path.join(static_dir, file_path)
+    
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Get MIME type
+    mime_type, _ = mimetypes.guess_type(full_path)
+    if mime_type is None:
+        mime_type = "application/octet-stream"
+    
+    return FileResponse(
+        path=full_path,
+        media_type=mime_type,
+        headers={
+            "Cache-Control": "public, max-age=31536000",  # 1 year cache
+            "Access-Control-Allow-Origin": "*"
+        }
+    )
 
 
 # Authentication endpoints

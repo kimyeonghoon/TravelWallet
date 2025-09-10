@@ -1,6 +1,6 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func
-from models import Expense, TransportCard
+from models import Expense, TransportCard, Wallet
 from datetime import datetime, date
 from typing import List, Optional
 
@@ -8,10 +8,11 @@ class ExpenseService:
     """Service class for expense database operations."""
     
     @staticmethod
-    def create_expense(db: Session, user_id: int, amount: float, category: str, description: str = "", payment_method: str = "현금") -> Expense:
+    def create_expense(db: Session, user_id: int, amount: float, category: str, description: str = "", payment_method: str = "현금", wallet_id: int = None) -> Expense:
         """Create a new expense record for a user."""
         expense = Expense(
             user_id=user_id,
+            wallet_id=wallet_id,
             amount=amount,
             category=category,
             description=description,
@@ -27,7 +28,7 @@ class ExpenseService:
     @staticmethod
     def get_all_expenses(db: Session) -> List[Expense]:
         """Get all expenses ordered by timestamp descending."""
-        return db.query(Expense).order_by(Expense.timestamp.desc()).all()
+        return db.query(Expense).options(selectinload(Expense.wallet)).order_by(Expense.timestamp.desc()).all()
     
     @staticmethod
     def get_expense(db: Session, expense_id: int) -> Optional[Expense]:
@@ -79,7 +80,7 @@ class ExpenseService:
         search: Optional[str] = None
     ) -> List[Expense]:
         """Get expenses with optional filters and sorting."""
-        query = db.query(Expense)
+        query = db.query(Expense).options(selectinload(Expense.wallet))
         
         # Apply filters
         if category:
@@ -205,7 +206,7 @@ class ExpenseService:
     def update_expense(db: Session, expense_id: int, amount: float = None, 
                       category: str = None, description: str = None, 
                       expense_date: str = None, expense_time: str = None,
-                      payment_method: str = None) -> Optional[Expense]:
+                      payment_method: str = None, wallet_id: int = None) -> Optional[Expense]:
         """Update an expense by ID."""
         expense = db.query(Expense).filter(Expense.id == expense_id).first()
         if expense:
@@ -219,6 +220,8 @@ class ExpenseService:
                 expense.date = expense_date
             if payment_method is not None:
                 expense.payment_method = payment_method
+            if wallet_id is not None:
+                expense.wallet_id = wallet_id
             if expense_time is not None:
                 # Parse time and combine with existing date or new date
                 try:
@@ -255,7 +258,7 @@ class ExpenseService:
     def update_user_expense(db: Session, user_id: int, expense_id: int, amount: float = None, 
                           category: str = None, description: str = None, 
                           expense_date: str = None, expense_time: str = None,
-                          payment_method: str = None) -> Optional[Expense]:
+                          payment_method: str = None, wallet_id: int = None) -> Optional[Expense]:
         """Update an expense by ID for a specific user."""
         expense = db.query(Expense).filter(Expense.id == expense_id, Expense.user_id == user_id).first()
         if expense:
@@ -267,6 +270,8 @@ class ExpenseService:
                 expense.description = description
             if payment_method is not None:
                 expense.payment_method = payment_method
+            if wallet_id is not None:
+                expense.wallet_id = wallet_id
             if expense_date is not None:
                 expense.date = expense_date
             if expense_time is not None:
@@ -374,4 +379,63 @@ class TransportCardService:
     def get_total_balance(db: Session) -> float:
         """Get total balance of all transport cards."""
         result = db.query(func.sum(TransportCard.balance)).scalar()
+        return result if result else 0.0
+
+class WalletService:
+    """Service class for wallet database operations."""
+    
+    @staticmethod
+    def create_wallet(db: Session, name: str, balance: float = 0.0) -> Wallet:
+        """Create a new wallet."""
+        wallet = Wallet(
+            name=name,
+            balance=balance,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(wallet)
+        db.commit()
+        db.refresh(wallet)
+        return wallet
+    
+    @staticmethod
+    def get_all_wallets(db: Session) -> List[Wallet]:
+        """Get all wallets ordered by name."""
+        return db.query(Wallet).order_by(Wallet.name).all()
+    
+    @staticmethod
+    def get_wallet(db: Session, wallet_id: int) -> Optional[Wallet]:
+        """Get a single wallet by ID."""
+        return db.query(Wallet).filter(Wallet.id == wallet_id).first()
+    
+    @staticmethod
+    def update_wallet(db: Session, wallet_id: int, name: str = None, balance: float = None) -> Optional[Wallet]:
+        """Update a wallet."""
+        wallet = db.query(Wallet).filter(Wallet.id == wallet_id).first()
+        if wallet:
+            if name is not None:
+                wallet.name = name
+            if balance is not None:
+                wallet.balance = balance
+            wallet.updated_at = datetime.utcnow()
+            
+            db.commit()
+            db.refresh(wallet)
+            return wallet
+        return None
+    
+    @staticmethod
+    def delete_wallet(db: Session, wallet_id: int) -> bool:
+        """Delete a wallet by ID."""
+        wallet = db.query(Wallet).filter(Wallet.id == wallet_id).first()
+        if wallet:
+            db.delete(wallet)
+            db.commit()
+            return True
+        return False
+    
+    @staticmethod
+    def get_total_balance(db: Session) -> float:
+        """Get total balance of all wallets."""
+        result = db.query(func.sum(Wallet.balance)).scalar()
         return result if result else 0.0

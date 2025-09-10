@@ -9,8 +9,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 import os
 
-from models import create_tables, get_db, User, TransportCard
-from database import ExpenseService, TransportCardService
+from models import create_tables, get_db, User, TransportCard, Wallet
+from database import ExpenseService, TransportCardService, WalletService
 from auth import AuthService
 from exchange_service import exchange_service
 
@@ -34,12 +34,21 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=static_dir, html=True), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# Startup event to create database tables
+@app.on_event("startup")
+async def startup_event():
+    """Create database tables on application startup."""
+    from models import create_tables
+    create_tables()
+    print("Database tables created successfully")
+
 # Pydantic models for API
 class ExpenseCreate(BaseModel):
     amount: float
     category: str
     description: str = ""
     payment_method: str = "현금"
+    wallet_id: Optional[int] = None
 
 class ExpenseResponse(BaseModel):
     id: int
@@ -48,6 +57,8 @@ class ExpenseResponse(BaseModel):
     description: str
     date: str
     payment_method: str
+    wallet_id: Optional[int] = None
+    wallet_name: Optional[str] = None
     timestamp: str
 
 class ExpenseUpdate(BaseModel):
@@ -57,6 +68,7 @@ class ExpenseUpdate(BaseModel):
     date: Optional[str] = None
     time: Optional[str] = None
     payment_method: Optional[str] = None
+    wallet_id: Optional[int] = None
 
 class SummaryResponse(BaseModel):
     total_expense: float
@@ -72,6 +84,22 @@ class TransportCardUpdate(BaseModel):
     balance: Optional[float] = None
 
 class TransportCardResponse(BaseModel):
+    id: int
+    name: str
+    balance: float
+    created_at: str
+    updated_at: str
+
+# Wallet models
+class WalletCreate(BaseModel):
+    name: str
+    balance: float = 0.0
+
+class WalletUpdate(BaseModel):
+    name: Optional[str] = None
+    balance: Optional[float] = None
+
+class WalletResponse(BaseModel):
     id: int
     name: str
     balance: float
@@ -298,7 +326,8 @@ async def create_expense(expense: ExpenseCreate, current_user: User = Depends(re
             amount=expense.amount, 
             category=expense.category, 
             description=expense.description,
-            payment_method=expense.payment_method
+            payment_method=expense.payment_method,
+            wallet_id=expense.wallet_id
         )
         return ExpenseResponse(**new_expense.to_dict())
     except Exception as e:
@@ -346,7 +375,8 @@ async def update_expense(expense_id: int, expense_update: ExpenseUpdate, current
         description=expense_update.description,
         expense_date=expense_update.date,
         expense_time=expense_update.time,
-        payment_method=expense_update.payment_method
+        payment_method=expense_update.payment_method,
+        wallet_id=expense_update.wallet_id
     )
     if not updated_expense:
         raise HTTPException(status_code=404, detail="Expense not found")
@@ -427,6 +457,70 @@ async def delete_transport_card(
 async def get_transport_card_summary(db: Session = Depends(get_db)):
     """Get total balance of all transport cards."""
     total_balance = TransportCardService.get_total_balance(db)
+    return {"total_balance": total_balance}
+
+# Wallet endpoints
+@app.get("/wallets", response_class=HTMLResponse)
+async def wallets_page(
+    request: Request,
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """Wallets page accessible to all users."""
+    return templates.TemplateResponse("wallets.html", {
+        "request": request,
+        "user": current_user
+    })
+
+@app.post("/api/wallets", response_model=WalletResponse)
+async def create_wallet(
+    wallet: WalletCreate, 
+    current_user: User = Depends(require_auth), 
+    db: Session = Depends(get_db)
+):
+    """Create a new wallet."""
+    try:
+        new_wallet = WalletService.create_wallet(db, wallet.name, wallet.balance)
+        return WalletResponse(**new_wallet.to_dict())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/wallets", response_model=List[WalletResponse])
+async def get_wallets(db: Session = Depends(get_db)):
+    """Get all wallets - public access for viewing."""
+    wallets = WalletService.get_all_wallets(db)
+    return [WalletResponse(**wallet.to_dict()) for wallet in wallets]
+
+@app.put("/api/wallets/{wallet_id}", response_model=WalletResponse)
+async def update_wallet(
+    wallet_id: int, 
+    wallet_update: WalletUpdate, 
+    current_user: User = Depends(require_auth), 
+    db: Session = Depends(get_db)
+):
+    """Update a wallet."""
+    updated_wallet = WalletService.update_wallet(
+        db, wallet_id, wallet_update.name, wallet_update.balance
+    )
+    if not updated_wallet:
+        raise HTTPException(status_code=404, detail="Wallet not found")
+    return WalletResponse(**updated_wallet.to_dict())
+
+@app.delete("/api/wallets/{wallet_id}")
+async def delete_wallet(
+    wallet_id: int, 
+    current_user: User = Depends(require_auth), 
+    db: Session = Depends(get_db)
+):
+    """Delete a wallet."""
+    success = WalletService.delete_wallet(db, wallet_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Wallet not found")
+    return {"message": "Wallet deleted successfully"}
+
+@app.get("/api/wallets/summary")
+async def get_wallet_summary(db: Session = Depends(get_db)):
+    """Get total balance of all wallets."""
+    total_balance = WalletService.get_total_balance(db)
     return {"total_balance": total_balance}
 
 # Exchange Rate endpoints

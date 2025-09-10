@@ -19,6 +19,7 @@ class Expense(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Nullable for backward compatibility
+    wallet_id = Column(Integer, ForeignKey("wallets.id"), nullable=True)  # 지갑 선택 (optional)
     amount = Column(Float, nullable=False)
     category = Column(String(50), nullable=False)
     description = Column(String(200), default="")
@@ -26,13 +27,16 @@ class Expense(Base):
     payment_method = Column(String(20), nullable=False, default="현금")  # 현금, 체크카드, 신용카드, 교통카드
     timestamp = Column(DateTime, default=now_kst)
     
-    # Relationship
+    # Relationships
     user = relationship("User", back_populates="expenses")
+    wallet = relationship("Wallet", back_populates="expenses")
     
     def to_dict(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
+            "wallet_id": self.wallet_id,
+            "wallet_name": self.wallet.name if self.wallet else None,
             "amount": self.amount,
             "category": self.category,
             "description": self.description,
@@ -88,6 +92,27 @@ class TransportCard(Base):
     balance = Column(Float, nullable=False, default=0.0)  # Balance in Japanese Yen
     created_at = Column(DateTime, default=now_kst)
     updated_at = Column(DateTime, default=now_kst, onupdate=now_kst)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "balance": self.balance,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None
+        }
+
+class Wallet(Base):
+    __tablename__ = "wallets"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)  # Wallet name (e.g., "일본지갑", "메인지갑", "여권지갑")
+    balance = Column(Float, nullable=False, default=0.0)  # Balance in Japanese Yen
+    created_at = Column(DateTime, default=now_kst)
+    updated_at = Column(DateTime, default=now_kst, onupdate=now_kst)
+    
+    # Relationship
+    expenses = relationship("Expense", back_populates="wallet")
     
     def to_dict(self):
         return {

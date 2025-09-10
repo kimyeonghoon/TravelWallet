@@ -467,6 +467,217 @@ async def convert_krw_to_jpy(amount: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
 
+# Data Export endpoints
+@app.get("/api/export/csv")
+async def export_expenses_csv(
+    category: Optional[str] = None,
+    payment_method: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Export expenses data as CSV file."""
+    try:
+        import csv
+        import io
+        from datetime import datetime
+        
+        # Get filtered expenses
+        expenses = ExpenseService.get_filtered_expenses(
+            db=db,
+            category=category,
+            payment_method=payment_method,
+            date_from=date_from,
+            date_to=date_to,
+            sort_by="date",
+            sort_order="desc"
+        )
+        
+        # Get current exchange rate for conversion
+        try:
+            exchange_rate = exchange_service.get_jpy_to_krw_rate()
+        except:
+            exchange_rate = 9.5  # Fallback rate
+        
+        # Create CSV content
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header with filter info
+        if any([category, payment_method, date_from, date_to]):
+            writer.writerow([f"# 필터 조건 적용됨 - 생성일시: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+            if category:
+                writer.writerow([f"# 카테고리: {category}"])
+            if payment_method:
+                writer.writerow([f"# 결제수단: {payment_method}"])
+            if date_from:
+                writer.writerow([f"# 시작일: {date_from}"])
+            if date_to:
+                writer.writerow([f"# 종료일: {date_to}"])
+            writer.writerow([])
+        
+        # Write headers
+        writer.writerow([
+            "날짜", "금액(원)", "금액(엔)", "카테고리", "설명", "결제수단", "등록시간"
+        ])
+        
+        # Write data
+        for expense in expenses:
+            jpy_amount = round(expense.amount / exchange_rate) if exchange_rate > 0 else 0
+            writer.writerow([
+                expense.date,
+                f"{expense.amount:,.0f}",
+                f"¥{jpy_amount:,}",
+                expense.category,
+                expense.description,
+                expense.payment_method,
+                expense.timestamp.strftime("%Y-%m-%d %H:%M:%S") if expense.timestamp else ""
+            ])
+        
+        # Add summary at the end
+        total_amount = sum(expense.amount for expense in expenses)
+        total_jpy = round(total_amount / exchange_rate) if exchange_rate > 0 else 0
+        writer.writerow([])
+        writer.writerow([f"총 {len(expenses)}건", f"{total_amount:,.0f}원", f"¥{total_jpy:,}", "", "", "", ""])
+        writer.writerow([f"환율 정보: 1엔 = {exchange_rate:.2f}원", "", "", "", "", "", ""])
+        
+        # Prepare response
+        csv_content = output.getvalue()
+        output.close()
+        
+        filename = f"japan_expenses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        
+        from fastapi.responses import Response
+        return Response(
+            content=csv_content.encode('utf-8-sig'),  # BOM for Excel compatibility
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"CSV export failed: {str(e)}")
+
+@app.get("/api/export/excel")
+async def export_expenses_excel(
+    category: Optional[str] = None,
+    payment_method: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Export expenses data as Excel file."""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill
+        from datetime import datetime
+        import io
+        
+        # Get filtered expenses
+        expenses = ExpenseService.get_filtered_expenses(
+            db=db,
+            category=category,
+            payment_method=payment_method,
+            date_from=date_from,
+            date_to=date_to,
+            sort_by="date",
+            sort_order="desc"
+        )
+        
+        # Get current exchange rate
+        try:
+            exchange_rate = exchange_service.get_jpy_to_krw_rate()
+        except:
+            exchange_rate = 9.5  # Fallback rate
+        
+        # Create workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "일본여행 지출내역"
+        
+        row = 1
+        
+        # Add filter information
+        if any([category, payment_method, date_from, date_to]):
+            ws[f'A{row}'] = f"필터 조건 - 생성일시: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            ws[f'A{row}'].font = Font(bold=True)
+            row += 1
+            
+            if category:
+                ws[f'A{row}'] = f"카테고리: {category}"
+                row += 1
+            if payment_method:
+                ws[f'A{row}'] = f"결제수단: {payment_method}"
+                row += 1
+            if date_from:
+                ws[f'A{row}'] = f"시작일: {date_from}"
+                row += 1
+            if date_to:
+                ws[f'A{row}'] = f"종료일: {date_to}"
+                row += 1
+            row += 1
+        
+        # Headers
+        headers = ["날짜", "금액(원)", "금액(엔)", "카테고리", "설명", "결제수단", "등록시간"]
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="E6E6FA", end_color="E6E6FA", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center")
+        
+        row += 1
+        
+        # Data rows
+        for expense in expenses:
+            jpy_amount = round(expense.amount / exchange_rate) if exchange_rate > 0 else 0
+            
+            ws.cell(row=row, column=1, value=expense.date)
+            ws.cell(row=row, column=2, value=expense.amount)
+            ws.cell(row=row, column=3, value=jpy_amount)
+            ws.cell(row=row, column=4, value=expense.category)
+            ws.cell(row=row, column=5, value=expense.description)
+            ws.cell(row=row, column=6, value=expense.payment_method)
+            ws.cell(row=row, column=7, value=expense.timestamp.strftime("%Y-%m-%d %H:%M:%S") if expense.timestamp else "")
+            row += 1
+        
+        # Summary
+        total_amount = sum(expense.amount for expense in expenses)
+        total_jpy = round(total_amount / exchange_rate) if exchange_rate > 0 else 0
+        
+        row += 1
+        ws.cell(row=row, column=1, value=f"총 {len(expenses)}건")
+        ws.cell(row=row, column=2, value=total_amount)
+        ws.cell(row=row, column=3, value=total_jpy)
+        
+        # Make summary row bold
+        for col in range(1, 4):
+            ws.cell(row=row, column=col).font = Font(bold=True)
+        
+        row += 1
+        ws.cell(row=row, column=1, value=f"환율 정보: 1엔 = {exchange_rate:.2f}원")
+        ws.cell(row=row, column=1).font = Font(italic=True)
+        
+        # Auto adjust column widths
+        for column_cells in ws.columns:
+            length = max(len(str(cell.value or "")) for cell in column_cells)
+            ws.column_dimensions[column_cells[0].column_letter].width = min(max(length + 2, 10), 50)
+        
+        # Save to bytes
+        excel_buffer = io.BytesIO()
+        wb.save(excel_buffer)
+        excel_buffer.seek(0)
+        
+        filename = f"japan_expenses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
+        from fastapi.responses import Response
+        return Response(
+            content=excel_buffer.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Excel export failed: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

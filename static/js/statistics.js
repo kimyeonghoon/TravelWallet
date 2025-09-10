@@ -441,7 +441,7 @@ $(document).ready(function() {
 });
 
 // Export functionality - global functions
-function exportData(format) {
+window.exportData = function(format) {
     const url = `/api/export/${format}`;
     
     // Create a temporary link and trigger download
@@ -454,9 +454,9 @@ function exportData(format) {
     
     // Show success message
     showExportAlert(`${format.toUpperCase()} 파일 다운로드가 시작됩니다.`, 'success');
-}
+};
 
-function exportFilteredData() {
+window.exportFilteredData = function() {
     const category = $('#export-category').val();
     const paymentMethod = $('#export-payment-method').val();
     const dateFrom = $('#export-date-from').val();
@@ -502,12 +502,12 @@ function exportFilteredData() {
         // Close modal after success
         setTimeout(() => {
             $('#exportFilterModal').modal('hide');
-            resetExportForm();
+            window.resetExportForm();
         }, 1500);
     }, 1000);
-}
+};
 
-function showExportAlert(message, type) {
+window.showExportAlert = function(message, type) {
     const alertHtml = `
         <div class="alert alert-${type} alert-dismissible fade show" role="alert">
             <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
@@ -524,15 +524,15 @@ function showExportAlert(message, type) {
             $('#export-alerts .alert').fadeOut();
         }, 3000);
     }
-}
+};
 
-function resetExportForm() {
+window.resetExportForm = function() {
     $('#export-filter-form')[0].reset();
     $('#export-alerts').empty();
     $('#format-csv').prop('checked', true);
-}
+};
 
 // Reset form when modal is hidden
 $('#exportFilterModal').on('hidden.bs.modal', function() {
-    resetExportForm();
+    window.resetExportForm();
 });

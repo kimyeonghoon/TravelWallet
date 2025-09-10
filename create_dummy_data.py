@@ -1,196 +1,194 @@
 #!/usr/bin/env python3
 """
-더미 데이터 생성 스크립트
-일본 여행 경비 추적기용 테스트 데이터를 생성합니다.
+일본 여행 경비 더미 데이터 생성 스크립트
+100개의 현실적인 지출 데이터를 생성합니다.
 """
 
-import os
-import sys
 import random
-from datetime import datetime, date, timedelta
-from sqlalchemy.orm import Session
-
-# Add current directory to path to import models
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from models import create_tables, get_db, Expense, User
-from auth import AuthService
-
-# 더미 데이터 설정
-CATEGORIES = ['food', 'transport', 'accommodation', 'admission', 'other']
-PAYMENT_METHODS = ['현금', '체크카드', '신용카드', '교통카드']
-
-# 카테고리별 더미 설명
-DESCRIPTIONS = {
-    'food': [
-        '라멘 맛집에서 점심',
-        '회전초밥 저녁식사', 
-        '편의점 간식',
-        '카페에서 커피',
-        '이자카야에서 맥주',
-        '규카츠 전문점',
-        '오코노미야키',
-        '타코야키 포장마차',
-        '스시 오마카세',
-        '모츠나베 저녁'
-    ],
-    'transport': [
-        'JR 야마노테선',
-        '지하철 이용료',
-        '택시 요금',
-        '신칸센 도쿄-오사카',
-        '버스 요금',
-        '공항 리무진',
-        'IC카드 충전',
-        '전철 일일권',
-        '케이블카 요금',
-        '렌터카 연료비'
-    ],
-    'accommodation': [
-        '시부야 호텔 1박',
-        '료칸 숙박비',
-        '캡슐호텔',
-        '게스트하우스',
-        '비즈니스호텔',
-        '온천료칸 2박',
-        'Airbnb 숙박',
-        '유스호스텔',
-        '러브호텔',
-        '망가카페 숙박'
-    ],
-    'admission': [
-        '도쿄타워 입장료',
-        '후지큐 하이랜드',
-        '우에노 동물원',
-        '센소지 절 관람',
-        '오사카성 입장',
-        '유니버설 스튜디오',
-        '디즈니랜드 티켓',
-        '메이지신궁 참배',
-        '온천 입욕료',
-        '스카이트리 전망대'
-    ],
-    'other': [
-        '기념품 쇼핑',
-        '약국에서 구매',
-        '100엔샵 쇼핑',
-        '만화책 구입',
-        '일본 화장품',
-        '전자제품 구매',
-        '옷 쇼핑',
-        '우산 구입',
-        '휴대폰 충전기',
-        '선물용 과자'
-    ]
-}
-
-# 카테고리별 금액 범위 (엔화)
-AMOUNT_RANGES = {
-    'food': (500, 8000),
-    'transport': (200, 15000), 
-    'accommodation': (3000, 25000),
-    'admission': (1000, 12000),
-    'other': (300, 20000)
-}
+import sqlite3
+from datetime import datetime, timedelta
+import os
 
 def create_dummy_data():
-    """더미 데이터 생성"""
-    print("일본 여행 경비 더미 데이터 생성 시작...")
+    """더미 데이터 100개 생성"""
     
-    # 데이터베이스 테이블 생성
-    create_tables()
-    
-    # 데이터베이스 세션 생성
-    db = next(get_db())
+    # 데이터베이스 연결
+    db_path = "japan_travel_expenses.db"
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
     
     try:
-        # 기본 사용자 생성 (이미 있으면 가져오기)
-        user = AuthService.create_user(db, "5496782369")
-        print(f"사용자 생성/확인 완료: Chat ID {user.telegram_chat_id}")
+        # 테이블이 없으면 생성 (기본 구조만)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                telegram_chat_id TEXT UNIQUE NOT NULL,
+                email TEXT,
+                is_active BOOLEAN DEFAULT 1,
+                created_at TEXT,
+                last_login TEXT,
+                last_login_request TEXT
+            )
+        ''')
         
-        # 기존 지출 데이터 확인
-        existing_count = db.query(Expense).count()
-        print(f"기존 지출 데이터: {existing_count}개")
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS expenses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                amount REAL NOT NULL,
+                category TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                date TEXT NOT NULL,
+                payment_method TEXT DEFAULT '현금',
+                timestamp TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
         
-        # 더미 데이터 생성 (최근 30일 범위)
-        today = date.today()
-        start_date = today - timedelta(days=30)
+        # 기본 사용자 생성 (더미 데이터용)
+        cursor.execute('SELECT id FROM users WHERE telegram_chat_id = ?', ("5469782369",))
+        user = cursor.fetchone()
         
-        expenses_created = 0
+        if not user:
+            now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            cursor.execute('''
+                INSERT INTO users (telegram_chat_id, email, is_active, created_at, last_login) 
+                VALUES (?, ?, ?, ?, ?)
+            ''', ("5469782369", "dummy@test.com", 1, now_str, now_str))
+            user_id = cursor.lastrowid
+        else:
+            user_id = user[0]
         
-        for i in range(20):
-            # 랜덤 카테고리 선택
-            category = random.choice(CATEGORIES)
+        # 일본 여행 기간 설정 (최근 2주간)
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=14)
+        
+        # 카테고리별 데이터 설정
+        categories = {
+            "식비": {
+                "descriptions": [
+                    "라멘집", "스시 오마카세", "이자카야", "우동집", "카레전문점",
+                    "가이센동", "야키니쿠", "텐푸라 정식", "편의점 도시락", "맥도날드",
+                    "스타벅스", "카페", "타코야키", "오코노미야키", "크레페",
+                    "빵집", "마트 과자", "길거리 음식", "패밀리레스토랑", "회전초밥"
+                ],
+                "amounts": range(1000, 50000, 500)
+            },
+            "교통비": {
+                "descriptions": [
+                    "JR 야마노테선", "도쿄메트로", "신칸센", "버스", "택시",
+                    "공항리무진", "케이세이 스카이라이너", "JR패스", "도시바 일일권", "모노레일",
+                    "지하철", "전철 한큐선", "한신전차", "오사카 지하철", "교토 버스"
+                ],
+                "amounts": range(200, 15000, 100)
+            },
+            "숙박비": {
+                "descriptions": [
+                    "비즈니스호텔", "료칸", "캡슐호텔", "게스트하우스", "에어비앤비",
+                    "시티호텔", "온천 료칸", "망가카페", "사우나 숙박", "호스텔"
+                ],
+                "amounts": range(30000, 200000, 5000)
+            },
+            "입장료": {
+                "descriptions": [
+                    "디즈니랜드", "디즈니씨", "USJ", "스카이트리", "도쿄타워",
+                    "후지큐 하이랜드", "오사카성", "금각사", "우에노 동물원", "아쿠아리움",
+                    "미술관", "박물관", "온센", "가라오케", "게임센터",
+                    "전망대", "신사 참배", "테마파크", "공원", "체험관"
+                ],
+                "amounts": range(500, 30000, 500)
+            },
+            "기타": {
+                "descriptions": [
+                    "기념품", "쇼핑", "약국", "의류", "화장품",
+                    "전자제품", "만화책", "피규어", "문구용품", "잡화",
+                    "선물", "과자선물", "술", "담배", "우산",
+                    "충전기", "SIM카드", "WiFi렌탈", "세탁", "짐보관"
+                ],
+                "amounts": range(500, 80000, 500)
+            }
+        }
+        
+        # 결제수단 가중치 설정 (현실적인 비율)
+        payment_methods_weights = [
+            ("현금", 40),
+            ("체크카드", 30),
+            ("신용카드", 25),
+            ("교통카드", 5)
+        ]
+        
+        payment_methods = []
+        for method, weight in payment_methods_weights:
+            payment_methods.extend([method] * weight)
+        
+        print("더미 데이터 생성 시작...")
+        
+        # 100개 더미 데이터 생성
+        for i in range(100):
+            # 랜덤 카테고리 선택 (가중치 적용)
+            category_weights = [
+                ("식비", 40),
+                ("교통비", 25),
+                ("입장료", 15),
+                ("숙박비", 10),
+                ("기타", 10)
+            ]
             
-            # 카테고리에 맞는 금액 범위에서 선택
-            min_amount, max_amount = AMOUNT_RANGES[category]
-            amount = random.randint(min_amount, max_amount)
+            category_list = []
+            for cat, weight in category_weights:
+                category_list.extend([cat] * weight)
             
-            # 랜덤 날짜 선택 (최근 30일)
-            random_days = random.randint(0, 30)
+            category = random.choice(category_list)
+            
+            # 해당 카테고리의 데이터 선택
+            description = random.choice(categories[category]["descriptions"])
+            amount = random.choice(categories[category]["amounts"])
+            payment_method = random.choice(payment_methods)
+            
+            # 랜덤 날짜 생성 (여행 기간 내)
+            random_days = random.randint(0, 14)
             expense_date = start_date + timedelta(days=random_days)
             
-            # 랜덤 시간 생성
-            random_hours = random.randint(6, 23)
-            random_minutes = random.randint(0, 59)
-            timestamp = datetime.combine(expense_date, datetime.min.time().replace(
-                hour=random_hours, minute=random_minutes
-            ))
+            # 시간도 랜덤하게 설정
+            random_hour = random.randint(6, 23)
+            random_minute = random.randint(0, 59)
+            timestamp = datetime.combine(expense_date, datetime.min.time().replace(hour=random_hour, minute=random_minute))
+            timestamp_str = timestamp.strftime('%Y-%m-%d %H:%M:%S')
             
-            # 랜덤 설명 선택
-            description = random.choice(DESCRIPTIONS[category])
+            # 데이터베이스에 삽입
+            cursor.execute('''
+                INSERT INTO expenses (user_id, amount, category, description, date, payment_method, timestamp) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, amount, category, description, expense_date.strftime("%Y-%m-%d"), payment_method, timestamp_str))
             
-            # 랜덤 결제수단 선택
-            payment_method = random.choice(PAYMENT_METHODS)
-            
-            # 지출 데이터 생성
-            expense = Expense(
-                user_id=user.id,
-                amount=float(amount),
-                category=category,
-                description=description,
-                date=expense_date.strftime("%Y-%m-%d"),
-                payment_method=payment_method,
-                timestamp=timestamp
-            )
-            
-            db.add(expense)
-            expenses_created += 1
-            
-            print(f"[OK] {expenses_created:2d}/20: {expense_date.strftime('%m/%d')} | "
-                  f"{category:13s} | YEN{amount:6,d} | {payment_method:4s} | {description}")
+            if (i + 1) % 20 == 0:
+                print(f"진행률: {i + 1}/100 ({(i + 1)}%)")
         
-        # 데이터베이스에 커밋
-        db.commit()
+        # 데이터베이스에 저장
+        conn.commit()
+        print("✅ 더미 데이터 100개 생성 완료!")
         
-        # 결과 요약
-        total_count = db.query(Expense).count()
-        total_amount = sum(e.amount for e in db.query(Expense).all())
+        # 통계 출력
+        print("\n📊 생성된 데이터 통계:")
+        for category in categories.keys():
+            cursor.execute('SELECT COUNT(*), SUM(amount) FROM expenses WHERE category = ?', (category,))
+            result = cursor.fetchone()
+            count = result[0] or 0
+            total_amount = result[1] or 0
+            print(f"  {category}: {count}건, 총 ₩{total_amount:,}")
         
-        print(f"\n[완료] 더미 데이터 생성 완료!")
-        print(f"[생성] 생성된 지출: {expenses_created}개")
-        print(f"[통계] 총 지출 데이터: {total_count}개")
-        print(f"[금액] 총 지출 금액: YEN{total_amount:,.0f}")
+        cursor.execute('SELECT COUNT(*), SUM(amount) FROM expenses')
+        result = cursor.fetchone()
+        total_expenses = result[0] or 0
+        total_amount = result[1] or 0
+        print(f"\n📈 전체: {total_expenses}건, 총 ₩{total_amount:,}")
         
-        # 카테고리별 통계
-        print(f"\n[분류] 카테고리별 생성 현황:")
-        for category in CATEGORIES:
-            count = db.query(Expense).filter(Expense.category == category).count()
-            category_names = {
-                'food': '식비',
-                'transport': '교통비', 
-                'accommodation': '숙박비',
-                'admission': '입장료',
-                'other': '기타'
-            }
-            print(f"   {category_names[category]:5s}: {count:2d}개")
-            
     except Exception as e:
-        print(f"[ERROR] 오류 발생: {e}")
-        db.rollback()
+        print(f"❌ 오류 발생: {e}")
+        conn.rollback()
         raise
     finally:
-        db.close()
+        conn.close()
 
 if __name__ == "__main__":
     create_dummy_data()

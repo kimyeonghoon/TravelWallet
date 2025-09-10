@@ -90,7 +90,25 @@
                 </div>
             </div>
 
-            <!-- Transport Card Balance -->
+            <!-- Exchange Rate Card -->
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="card text-white bg-success">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title">현재 환율 (JPY → KRW)</h6>
+                                    <h4 id="exchange-rate">¥100 = ₩0</h4>
+                                    <small class="text-white-50" id="exchange-rate-info">로딩 중...</small>
+                                </div>
+                                <i class="fas fa-exchange-alt fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transport Card Balance with KRW Conversion -->
             <div class="row">
                 <div class="col-12 mb-3">
                     <div class="card text-white bg-info">
@@ -99,6 +117,7 @@
                                 <div>
                                     <h6 class="card-title">교통카드 총 잔액</h6>
                                     <h4 id="transport-card-balance">¥0</h4>
+                                    <small class="text-white-50" id="transport-card-balance-krw">≈ ₩0</small>
                                 </div>
                                 <i class="fas fa-subway fa-2x"></i>
                             </div>
@@ -141,8 +160,16 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-12 col-md-6 mb-3">
-                                        <label for="amount" class="form-label">금액 (₩)</label>
-                                        <input type="number" class="form-control" id="amount" required>
+                                        <label for="amount" class="form-label">금액</label>
+                                        <div class="input-group">
+                                            <button class="btn btn-outline-secondary" type="button" id="currency-toggle">
+                                                <span id="currency-symbol">₩</span>
+                                            </button>
+                                            <input type="number" class="form-control" id="amount" required>
+                                        </div>
+                                        <div class="form-text">
+                                            <small id="currency-conversion-info" class="text-muted"></small>
+                                        </div>
                                     </div>
                                     <div class="col-12 col-md-6 mb-3">
                                         <label for="description" class="form-label">설명</label>

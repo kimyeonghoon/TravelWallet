@@ -1,10 +1,15 @@
 $(document).ready(function() {
+    // Exchange rate data
+    let exchangeRate = null;
+    let isJpyMode = false; // false = KRW, true = JPY
+    
     // Initialize the app
     initApp();
     
     function initApp() {
         loadExpenses();
         updateSummary();
+        loadExchangeRate();
         
         // Event listeners
         $('#expense-form').on('submit', handleExpenseSubmit);
@@ -32,13 +37,17 @@ $(document).ready(function() {
         $('#login-code-form').on('submit', handleLoginCodeSubmit);
         $('#back-to-step1').on('click', showLoginStep1);
         $('#login-code').on('input', formatLoginCode);
+        
+        // Currency toggle and conversion events
+        $('#currency-toggle').on('click', toggleCurrency);
+        $('#amount').on('input', updateCurrencyConversion);
     }
     
     // Handle expense form submission
     function handleExpenseSubmit(e) {
         e.preventDefault();
         
-        const amount = parseFloat($('#amount').val());
+        let amount = parseFloat($('#amount').val());
         const category = $('#category').val();
         const description = $('#description').val();
         const paymentMethod = $('#payment-method').val();
@@ -46,6 +55,11 @@ $(document).ready(function() {
         if (!amount || !category) {
             showAlert('금액과 카테고리를 입력해주세요.', 'warning');
             return;
+        }
+        
+        // Convert JPY to KRW if in JPY mode
+        if (isJpyMode && exchangeRate) {
+            amount = Math.round(amount * exchangeRate.jpy_to_krw_rate);
         }
         
         const expenseData = {
@@ -195,11 +209,89 @@ $(document).ready(function() {
             method: 'GET',
             success: function(data) {
                 $('#transport-card-balance').text(`¥${data.total_balance.toLocaleString()}`);
+                // Update KRW conversion if exchange rate is available
+                if (exchangeRate) {
+                    const krwAmount = Math.round(data.total_balance * exchangeRate.jpy_to_krw_rate);
+                    $('#transport-card-balance-krw').text(`≈ ₩${krwAmount.toLocaleString()}`);
+                }
             },
             error: function(xhr, status, error) {
                 console.error('Error loading transport card balance:', error);
             }
         });
+    }
+    
+    // Load exchange rate
+    function loadExchangeRate() {
+        $.ajax({
+            url: '/api/exchange-rate?' + new Date().getTime(),
+            method: 'GET',
+            success: function(data) {
+                exchangeRate = data;
+                updateExchangeRateDisplay();
+                updateTransportCardKrw();
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading exchange rate:', error);
+                $('#exchange-rate-info').text('환율 정보를 불러올 수 없습니다');
+            }
+        });
+    }
+    
+    // Update exchange rate display
+    function updateExchangeRateDisplay() {
+        if (exchangeRate) {
+            $('#exchange-rate').text(`¥100 = ₩${Math.round(exchangeRate.rate_per_100_jpy).toLocaleString()}`);
+            $('#exchange-rate-info').text(`${exchangeRate.data_source} • ${exchangeRate.last_updated}`);
+        }
+    }
+    
+    // Update transport card KRW conversion
+    function updateTransportCardKrw() {
+        if (exchangeRate) {
+            const balanceText = $('#transport-card-balance').text();
+            const balanceMatch = balanceText.match(/¥([\d,]+)/);
+            if (balanceMatch) {
+                const jpyBalance = parseFloat(balanceMatch[1].replace(/,/g, ''));
+                const krwAmount = Math.round(jpyBalance * exchangeRate.jpy_to_krw_rate);
+                $('#transport-card-balance-krw').text(`≈ ₩${krwAmount.toLocaleString()}`);
+            }
+        }
+    }
+    
+    // Toggle between KRW and JPY input
+    function toggleCurrency() {
+        isJpyMode = !isJpyMode;
+        const symbol = isJpyMode ? '¥' : '₩';
+        $('#currency-symbol').text(symbol);
+        
+        // Clear amount and conversion info
+        $('#amount').val('');
+        $('#currency-conversion-info').text('');
+        
+        // Update placeholder
+        const currency = isJpyMode ? 'JPY' : 'KRW';
+        $('#amount').attr('placeholder', `${currency} 금액을 입력하세요`);
+    }
+    
+    // Update currency conversion info
+    function updateCurrencyConversion() {
+        const amount = parseFloat($('#amount').val());
+        
+        if (!amount || !exchangeRate) {
+            $('#currency-conversion-info').text('');
+            return;
+        }
+        
+        if (isJpyMode) {
+            // JPY to KRW conversion
+            const krwAmount = Math.round(amount * exchangeRate.jpy_to_krw_rate);
+            $('#currency-conversion-info').text(`≈ ₩${krwAmount.toLocaleString()} (${exchangeRate.jpy_to_krw_rate.toFixed(2)} 환율 적용)`);
+        } else {
+            // KRW to JPY conversion
+            const jpyAmount = Math.round(amount / exchangeRate.jpy_to_krw_rate);
+            $('#currency-conversion-info').text(`≈ ¥${jpyAmount.toLocaleString()} (${exchangeRate.jpy_to_krw_rate.toFixed(2)} 환율 적용)`);
+        }
     }
     
     // Handle expense edit

@@ -92,6 +92,7 @@ $(document).ready(function() {
         if (filters.date_to) params.append('date_to', filters.date_to);
         if (filters.sort_by) params.append('sort_by', filters.sort_by);
         if (filters.sort_order) params.append('sort_order', filters.sort_order);
+        if (filters.search) params.append('search', filters.search);
         
         // Add cache busting
         params.append('_t', new Date().getTime());

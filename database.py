@@ -75,7 +75,8 @@ class ExpenseService:
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
         sort_by: Optional[str] = None,
-        sort_order: Optional[str] = "desc"
+        sort_order: Optional[str] = "desc",
+        search: Optional[str] = None
     ) -> List[Expense]:
         """Get expenses with optional filters and sorting."""
         query = db.query(Expense)
@@ -92,6 +93,11 @@ class ExpenseService:
         
         if date_to:
             query = query.filter(Expense.date <= date_to)
+        
+        # Apply search filter
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(Expense.description.ilike(search_term))
         
         # Apply sorting
         if sort_by == "date":

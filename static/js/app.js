@@ -16,6 +16,17 @@ $(document).ready(function() {
         $('#apply-filters').on('click', applyFilters);
         $('#clear-filters').on('click', clearFilters);
         
+        // Search on Enter key or real-time search with debounce
+        $('#search-description').on('keyup', function(e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            } else {
+                // Real-time search with 500ms debounce
+                clearTimeout(window.searchTimeout);
+                window.searchTimeout = setTimeout(applyFilters, 500);
+            }
+        });
+        
         // Login modal event listeners
         $('#email-form').on('submit', handleLoginRequest);
         $('#login-code-form').on('submit', handleLoginCodeSubmit);
@@ -543,6 +554,7 @@ $(document).ready(function() {
         const dateTo = $('#filter-date-to').val();
         const sortBy = $('#sort-by').val();
         const sortOrder = $('#sort-order').val();
+        const search = $('#search-description').val();
         
         // Build filters object
         if (category) filters.category = category;
@@ -551,6 +563,7 @@ $(document).ready(function() {
         if (dateTo) filters.date_to = dateTo;
         if (sortBy) filters.sort_by = sortBy;
         if (sortOrder && sortBy) filters.sort_order = sortOrder;
+        if (search) filters.search = search;
         
         // Validate date range
         if (dateFrom && dateTo && dateFrom > dateTo) {
@@ -575,6 +588,7 @@ $(document).ready(function() {
         $('#filter-date-to').val('');
         $('#sort-by').val('');
         $('#sort-order').val('desc');
+        $('#search-description').val('');
         
         // Reload all expenses
         loadExpenses();

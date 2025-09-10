@@ -311,10 +311,11 @@ async def get_expenses(
     date_to: Optional[str] = None,
     sort_by: Optional[str] = None,
     sort_order: Optional[str] = "desc",
+    search: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Get expenses with optional filters and sorting - public access for expense viewing."""
-    if any([category, payment_method, date_from, date_to, sort_by]):
+    if any([category, payment_method, date_from, date_to, sort_by, search]):
         # Use filtered query
         expenses = ExpenseService.get_filtered_expenses(
             db=db,
@@ -323,7 +324,8 @@ async def get_expenses(
             date_from=date_from,
             date_to=date_to,
             sort_by=sort_by,
-            sort_order=sort_order
+            sort_order=sort_order,
+            search=search
         )
     else:
         # Use existing method for backward compatibility

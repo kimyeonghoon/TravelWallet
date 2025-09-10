@@ -138,6 +138,15 @@ cp ./data/japan_travel_expenses.db ./backup/japan_travel_expenses_$(date +%Y%m%d
 - **권한별 기능 제어**: 로그인 사용자만 지출 추가/수정/삭제 가능
 - **보안 강화**: Chat ID 및 민감 정보 서버 측 보호
 
+### 💱 환율 시스템
+- **실시간 환율 연동**: 한국수출입은행 공식 API를 통한 정확한 환율 정보
+- **스마트 캐싱**: 5분간 환율 데이터 캐시로 API 호출 최적화
+- **홈페이지 환율 표시**: 현재 JPY-KRW 환율을 카드 형태로 명확히 표시
+- **교통카드 원화 환산**: 엔화 잔액을 실시간 원화로 자동 변환 표시
+- **통화 토글 입력**: 지출 추가 시 ₩/¥ 버튼으로 간편한 통화 선택
+- **자동 환율 변환**: 엔화 입력 시 실시간 원화 환산 및 자동 저장
+- **폴백 처리**: API 장애 시 기본 환율(9.5원/엔)로 서비스 지속
+
 ### 📱 사용자 경험
 - **반응형 디자인**: 모바일/태블릿/데스크톱 지원
 - **직관적 UI**: Bootstrap 5 기반 깔끔한 인터페이스
@@ -219,6 +228,10 @@ japan_travel_expense/
 - ✅ Authentication-based feature restrictions (add/edit/delete)
 - ✅ Predefined Chat ID (5469782369) for streamlined authentication
 - ✅ JWT session management with auto-expiry
+- ✅ Real-time exchange rate integration with Korea Export-Import Bank API
+- ✅ JPY to KRW conversion display on homepage and transport cards
+- ✅ Currency toggle functionality in expense form (₩/¥)
+- ✅ Automatic JPY to KRW conversion when submitting expenses
 
 ## Notes
 

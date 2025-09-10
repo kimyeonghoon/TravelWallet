@@ -208,11 +208,13 @@ $(document).ready(function() {
             url: '/api/transport-cards/summary?' + new Date().getTime(), // Cache busting
             method: 'GET',
             success: function(data) {
-                $('#transport-card-balance').text(`¥${data.total_balance.toLocaleString()}`);
-                // Update KRW conversion if exchange rate is available
                 if (exchangeRate) {
                     const krwAmount = Math.round(data.total_balance * exchangeRate.jpy_to_krw_rate);
-                    $('#transport-card-balance-krw').text(`≈ ₩${krwAmount.toLocaleString()}`);
+                    $('#transport-card-balance').text(`¥${data.total_balance.toLocaleString()} = ₩${krwAmount.toLocaleString()}`);
+                    $('#transport-card-exchange-info').text(`1엔 = ${exchangeRate.jpy_to_krw_rate.toFixed(2)}원`);
+                } else {
+                    $('#transport-card-balance').text(`¥${data.total_balance.toLocaleString()}`);
+                    $('#transport-card-exchange-info').text('환율 정보 로딩 중...');
                 }
             },
             error: function(xhr, status, error) {
@@ -248,15 +250,22 @@ $(document).ready(function() {
     
     // Update transport card KRW conversion
     function updateTransportCardKrw() {
-        if (exchangeRate) {
-            const balanceText = $('#transport-card-balance').text();
-            const balanceMatch = balanceText.match(/¥([\d,]+)/);
-            if (balanceMatch) {
-                const jpyBalance = parseFloat(balanceMatch[1].replace(/,/g, ''));
-                const krwAmount = Math.round(jpyBalance * exchangeRate.jpy_to_krw_rate);
-                $('#transport-card-balance-krw').text(`≈ ₩${krwAmount.toLocaleString()}`);
+        // This function is now integrated into the balance loading function
+        // Trigger balance refresh to update with new exchange rate
+        $.ajax({
+            url: '/api/transport-cards/summary?' + new Date().getTime(),
+            method: 'GET',
+            success: function(data) {
+                if (exchangeRate) {
+                    const krwAmount = Math.round(data.total_balance * exchangeRate.jpy_to_krw_rate);
+                    $('#transport-card-balance').text(`¥${data.total_balance.toLocaleString()} = ₩${krwAmount.toLocaleString()}`);
+                    $('#transport-card-exchange-info').text(`1엔 = ${exchangeRate.jpy_to_krw_rate.toFixed(2)}원`);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error updating transport card balance:', error);
             }
-        }
+        });
     }
     
     // Toggle between KRW and JPY input

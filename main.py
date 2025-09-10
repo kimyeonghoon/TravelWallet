@@ -12,6 +12,7 @@ import os
 from models import create_tables, get_db, User, TransportCard
 from database import ExpenseService, TransportCardService
 from auth import AuthService
+from exchange_service import exchange_service
 
 # Create database tables
 create_tables()
@@ -427,6 +428,44 @@ async def get_transport_card_summary(db: Session = Depends(get_db)):
     """Get total balance of all transport cards."""
     total_balance = TransportCardService.get_total_balance(db)
     return {"total_balance": total_balance}
+
+# Exchange Rate endpoints
+@app.get("/api/exchange-rate")
+async def get_exchange_rate():
+    """Get current JPY to KRW exchange rate."""
+    try:
+        rate_info = exchange_service.get_rate_info()
+        return rate_info
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch exchange rate: {str(e)}")
+
+@app.post("/api/convert/jpy-to-krw")
+async def convert_jpy_to_krw(amount: dict):
+    """Convert JPY amount to KRW."""
+    try:
+        jpy_amount = amount.get("amount", 0)
+        krw_amount = exchange_service.convert_jpy_to_krw(jpy_amount)
+        return {
+            "jpy_amount": jpy_amount,
+            "krw_amount": krw_amount,
+            "exchange_rate": exchange_service.get_jpy_to_krw_rate()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
+
+@app.post("/api/convert/krw-to-jpy")
+async def convert_krw_to_jpy(amount: dict):
+    """Convert KRW amount to JPY."""
+    try:
+        krw_amount = amount.get("amount", 0)
+        jpy_amount = exchange_service.convert_krw_to_jpy(krw_amount)
+        return {
+            "krw_amount": krw_amount,
+            "jpy_amount": jpy_amount,
+            "exchange_rate": exchange_service.get_jpy_to_krw_rate()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

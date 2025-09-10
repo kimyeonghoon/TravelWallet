@@ -176,6 +176,18 @@ $(document).ready(function() {
                 console.error('Error loading summary:', error);
             }
         });
+        
+        // Load transport card balance
+        $.ajax({
+            url: '/api/transport-cards/summary?' + new Date().getTime(), // Cache busting
+            method: 'GET',
+            success: function(data) {
+                $('#transport-card-balance').text(`¥${data.total_balance.toLocaleString()}`);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading transport card balance:', error);
+            }
+        });
     }
     
     // Handle expense edit

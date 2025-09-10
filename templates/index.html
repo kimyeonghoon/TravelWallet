@@ -31,6 +31,9 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/statistics"><i class="fas fa-chart-bar me-1"></i>통계</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/transport-cards"><i class="fas fa-subway me-1"></i>교통카드</a>
+                        </li>
                         {% if user %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
@@ -81,6 +84,28 @@
                                     <h4 id="today-expense">₩0</h4>
                                 </div>
                                 <i class="fas fa-calendar-day fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transport Card Balance -->
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title">교통카드 총 잔액</h6>
+                                    <h4 id="transport-card-balance">¥0</h4>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-subway fa-2x me-3"></i>
+                                    <a href="/transport-cards" class="btn btn-light btn-sm">
+                                        <i class="fas fa-cog"></i> 관리
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>

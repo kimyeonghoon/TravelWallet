@@ -171,6 +171,17 @@ async def statistics_page(
         "user": current_user
     })
 
+@app.get("/transport-cards", response_class=HTMLResponse)
+async def transport_cards_page(
+    request: Request,
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """Transport cards page accessible to all users."""
+    return templates.TemplateResponse("transport-cards.html", {
+        "request": request,
+        "user": current_user
+    })
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "message": "Japan Travel Expense API is running"}

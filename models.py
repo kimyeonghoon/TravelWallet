@@ -72,6 +72,24 @@ class LoginToken(Base):
     # Relationship
     user = relationship("User", back_populates="login_tokens")
 
+class TransportCard(Base):
+    __tablename__ = "transport_cards"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)  # Card name (e.g., "Suica", "PASMO")
+    balance = Column(Float, nullable=False, default=0.0)  # Balance in Japanese Yen
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "balance": self.balance,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None
+        }
+
 class IPBan(Base):
     __tablename__ = "ip_bans"
     

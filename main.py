@@ -9,8 +9,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 import os
 
-from models import create_tables, get_db, User
-from database import ExpenseService
+from models import create_tables, get_db, User, TransportCard
+from database import ExpenseService, TransportCardService
 from auth import AuthService
 
 # Create database tables
@@ -60,6 +60,22 @@ class ExpenseUpdate(BaseModel):
 class SummaryResponse(BaseModel):
     total_expense: float
     today_expense: float
+
+# Transport Card models
+class TransportCardCreate(BaseModel):
+    name: str
+    balance: float = 0.0
+
+class TransportCardUpdate(BaseModel):
+    name: Optional[str] = None
+    balance: Optional[float] = None
+
+class TransportCardResponse(BaseModel):
+    id: int
+    name: str
+    balance: float
+    created_at: str
+    updated_at: str
 
 # Authentication models
 class LoginRequest(BaseModel):
@@ -345,6 +361,59 @@ async def get_summary(db: Session = Depends(get_db)):
 async def get_statistics(db: Session = Depends(get_db)):
     """Get comprehensive statistics for dashboard."""
     return ExpenseService.get_statistics(db)
+
+# Transport Card endpoints
+@app.post("/api/transport-cards", response_model=TransportCardResponse)
+async def create_transport_card(
+    card: TransportCardCreate, 
+    current_user: User = Depends(require_auth), 
+    db: Session = Depends(get_db)
+):
+    """Create a new transport card."""
+    try:
+        new_card = TransportCardService.create_card(db, card.name, card.balance)
+        return TransportCardResponse(**new_card.to_dict())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/transport-cards", response_model=List[TransportCardResponse])
+async def get_transport_cards(db: Session = Depends(get_db)):
+    """Get all transport cards - public access for viewing."""
+    cards = TransportCardService.get_all_cards(db)
+    return [TransportCardResponse(**card.to_dict()) for card in cards]
+
+@app.put("/api/transport-cards/{card_id}", response_model=TransportCardResponse)
+async def update_transport_card(
+    card_id: int, 
+    card_update: TransportCardUpdate, 
+    current_user: User = Depends(require_auth), 
+    db: Session = Depends(get_db)
+):
+    """Update a transport card."""
+    updated_card = TransportCardService.update_card(
+        db, card_id, card_update.name, card_update.balance
+    )
+    if not updated_card:
+        raise HTTPException(status_code=404, detail="Transport card not found")
+    return TransportCardResponse(**updated_card.to_dict())
+
+@app.delete("/api/transport-cards/{card_id}")
+async def delete_transport_card(
+    card_id: int, 
+    current_user: User = Depends(require_auth), 
+    db: Session = Depends(get_db)
+):
+    """Delete a transport card."""
+    success = TransportCardService.delete_card(db, card_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Transport card not found")
+    return {"message": "Transport card deleted successfully"}
+
+@app.get("/api/transport-cards/summary")
+async def get_transport_card_summary(db: Session = Depends(get_db)):
+    """Get total balance of all transport cards."""
+    total_balance = TransportCardService.get_total_balance(db)
+    return {"total_balance": total_balance}
 
 if __name__ == "__main__":
     import uvicorn

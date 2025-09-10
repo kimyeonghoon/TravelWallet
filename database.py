@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from models import Expense
+from models import Expense, TransportCard
 from datetime import datetime, date
 from typing import List, Optional
 
@@ -308,4 +308,64 @@ class ExpenseService:
             Expense.user_id == user_id,
             Expense.date == today
         ).scalar()
+        return result if result else 0.0
+
+
+class TransportCardService:
+    """Service class for transport card database operations."""
+    
+    @staticmethod
+    def create_card(db: Session, name: str, balance: float = 0.0) -> TransportCard:
+        """Create a new transport card."""
+        card = TransportCard(
+            name=name,
+            balance=balance,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(card)
+        db.commit()
+        db.refresh(card)
+        return card
+    
+    @staticmethod
+    def get_all_cards(db: Session) -> List[TransportCard]:
+        """Get all transport cards ordered by name."""
+        return db.query(TransportCard).order_by(TransportCard.name).all()
+    
+    @staticmethod
+    def get_card(db: Session, card_id: int) -> Optional[TransportCard]:
+        """Get a single transport card by ID."""
+        return db.query(TransportCard).filter(TransportCard.id == card_id).first()
+    
+    @staticmethod
+    def update_card(db: Session, card_id: int, name: str = None, balance: float = None) -> Optional[TransportCard]:
+        """Update a transport card."""
+        card = db.query(TransportCard).filter(TransportCard.id == card_id).first()
+        if card:
+            if name is not None:
+                card.name = name
+            if balance is not None:
+                card.balance = balance
+            card.updated_at = datetime.utcnow()
+            
+            db.commit()
+            db.refresh(card)
+            return card
+        return None
+    
+    @staticmethod
+    def delete_card(db: Session, card_id: int) -> bool:
+        """Delete a transport card by ID."""
+        card = db.query(TransportCard).filter(TransportCard.id == card_id).first()
+        if card:
+            db.delete(card)
+            db.commit()
+            return True
+        return False
+    
+    @staticmethod
+    def get_total_balance(db: Session) -> float:
+        """Get total balance of all transport cards."""
+        result = db.query(func.sum(TransportCard.balance)).scalar()
         return result if result else 0.0

@@ -34,40 +34,49 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-yen-sign me-2"></i>일본 여행 경비
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/"><i class="fas fa-home me-1"></i>홈</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/statistics"><i class="fas fa-chart-bar me-1"></i>통계</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/transport-cards"><i class="fas fa-subway me-1"></i>교통카드</a>
-                    </li>
-                </ul>
-                
-                <div class="navbar-nav">
-                    {% if user %}
-                        <span class="navbar-text me-3">안녕하세요!</span>
-                        <button class="btn btn-outline-light btn-sm" onclick="logout()">로그아웃</button>
-                    {% else %}
-                        <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">로그인</button>
-                    {% endif %}
+    <div class="container-fluid">
+        <!-- Header -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="/">
+                    <i class="fas fa-yen-sign me-2"></i>일본 여행 경비
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/"><i class="fas fa-home me-1"></i>홈</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/statistics"><i class="fas fa-chart-bar me-1"></i>통계</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/transport-cards"><i class="fas fa-subway me-1"></i>교통카드</a>
+                        </li>
+                        {% if user %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fab fa-telegram-plane me-1"></i>{{ user.telegram_chat_id }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" id="logout-btn">
+                                    <i class="fas fa-sign-out-alt me-2"></i>로그아웃
+                                </a></li>
+                            </ul>
+                        </li>
+                        {% else %}
+                        <li class="nav-item">
+                            <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">
+                                <i class="fab fa-telegram-plane me-1"></i>로그인
+                            </button>
+                        </li>
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
-        </div>
-    </nav>
+        </nav>
 
     <div class="container mt-4">
         <div class="row">

@@ -241,6 +241,15 @@ settings.ini
 temp/
 tmp/
 
+# Test files and exports
+test_*.csv
+test_*.xlsx
+*_test_*.csv
+*_test_*.xlsx
+japan_expenses_test_*.csv
+export_*.csv
+export_*.xlsx
+
 # Editor backups
 *~
 *.bak

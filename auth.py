@@ -103,21 +103,21 @@ class AuthService:
     @staticmethod
     def verify_email_and_send_code(db: Session, email: str, ip_address: str) -> tuple[bool, str]:
         """Verify email and send Telegram code if valid."""
-        # Check if IP is banned
-        ip_ban = AuthService.check_ip_ban(db, ip_address)
-        if ip_ban:
-            remaining_time = int((ip_ban.banned_until - datetime.utcnow()).total_seconds() / 60)
-            return False, f"IP가 차단되었습니다. {remaining_time}분 후 다시 시도하세요."
-        
-        # Verify email
+        # Verify email first
         if email.lower() != ALLOWED_EMAIL.lower():
-            # Record failed attempt
+            # Check if IP is banned before recording failed attempt
+            ip_ban = AuthService.check_ip_ban(db, ip_address)
+            if ip_ban:
+                remaining_time = int((ip_ban.banned_until - datetime.utcnow()).total_seconds() / 60)
+                return False, f"IP가 차단되었습니다. {remaining_time}분 후 다시 시도하세요."
+            
+            # Record failed attempt for wrong email
             is_banned = AuthService.record_failed_attempt(db, ip_address)
             if is_banned:
                 return False, f"너무 많은 실패로 인해 {BAN_DURATION_MINUTES}분간 접속이 제한됩니다."
             return False, "등록되지 않은 이메일입니다."
         
-        # Email is valid, reset any previous failures
+        # Email is valid - reset any previous failures and IP bans
         AuthService.reset_failed_attempts(db, ip_address)
         
         # Get or create user with configured Chat ID

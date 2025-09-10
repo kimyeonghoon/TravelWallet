@@ -27,6 +27,7 @@ services:
     # SQLite 데이터베이스 파일의 경로를 볼륨 마운트된 위치로 지정
     environment:
       - DATABASE_URL=sqlite:///./data/japan_travel_expenses.db
+      - TZ=Asia/Seoul
     
     # 컨테이너 재시작 정책
     # 수동으로 중지하지 않는 한 항상 재시작 (서버 재부팅 시에도 자동 시작)

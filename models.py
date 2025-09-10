@@ -2,7 +2,15 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Foreig
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
+import pytz
 import os
+
+# 한국 시간대 설정
+KST = pytz.timezone('Asia/Seoul')
+
+def now_kst():
+    """현재 한국 시간을 반환"""
+    return datetime.now(KST)
 
 Base = declarative_base()
 
@@ -16,7 +24,7 @@ class Expense(Base):
     description = Column(String(200), default="")
     date = Column(String(10), nullable=False)  # YYYY-MM-DD format
     payment_method = Column(String(20), nullable=False, default="현금")  # 현금, 체크카드, 신용카드, 교통카드
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=now_kst)
     
     # Relationship
     user = relationship("User", back_populates="expenses")
@@ -40,7 +48,7 @@ class User(Base):
     telegram_chat_id = Column(String(255), unique=True, index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=True)  # Keep for backward compatibility
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=now_kst)
     last_login = Column(DateTime, nullable=True)
     last_login_request = Column(DateTime, nullable=True)
     
@@ -67,7 +75,7 @@ class LoginToken(Base):
     expires_at = Column(DateTime, nullable=False)
     is_used = Column(Boolean, default=False)
     used_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=now_kst)
     
     # Relationship
     user = relationship("User", back_populates="login_tokens")
@@ -78,8 +86,8 @@ class TransportCard(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)  # Card name (e.g., "Suica", "PASMO")
     balance = Column(Float, nullable=False, default=0.0)  # Balance in Japanese Yen
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=now_kst)
+    updated_at = Column(DateTime, default=now_kst, onupdate=now_kst)
     
     def to_dict(self):
         return {
@@ -97,12 +105,12 @@ class IPBan(Base):
     ip_address = Column(String(45), index=True, nullable=False)  # Support IPv6
     failed_attempts = Column(Integer, default=1)
     banned_until = Column(DateTime, nullable=True)
-    first_attempt = Column(DateTime, default=datetime.utcnow)
-    last_attempt = Column(DateTime, default=datetime.utcnow)
+    first_attempt = Column(DateTime, default=now_kst)
+    last_attempt = Column(DateTime, default=now_kst)
     
     def is_banned(self):
         """Check if IP is currently banned."""
-        if self.banned_until and datetime.utcnow() < self.banned_until:
+        if self.banned_until and now_kst() < self.banned_until:
             return True
         return False
 

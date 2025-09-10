@@ -9,15 +9,20 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+# 타임존 설정
+ENV TZ=Asia/Seoul
+
 # 시스템 의존성 패키지 설치
 # gcc: SQLAlchemy 컴파일에 필요
 # sqlite3: SQLite 데이터베이스 조작 도구
 # curl: 헬스체크에 사용
+# tzdata: 타임존 데이터
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         gcc \
         sqlite3 \
         curl \
+        tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # Python 패키지 의존성 파일을 먼저 복사 (Docker 레이어 캐싱 최적화)

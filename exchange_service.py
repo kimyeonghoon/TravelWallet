@@ -44,7 +44,7 @@ class ExchangeRateService:
             params["searchdate"] = search_date
             
         try:
-            response = requests.get(self.base_url, params=params, timeout=10, verify='/etc/ssl/certs/ca-certificates.crt')
+            response = requests.get(self.base_url, params=params, timeout=10, verify='/etc/ssl/certs/ca-bundle.crt')
             response.raise_for_status()
             
             rates_data = response.json()

@@ -147,6 +147,16 @@ cp ./data/japan_travel_expenses.db ./backup/japan_travel_expenses_$(date +%Y%m%d
 - **자동 환율 변환**: 엔화 입력 시 실시간 원화 환산 및 자동 저장
 - **폴백 처리**: API 장애 시 기본 환율(9.5원/엔)로 서비스 지속
 
+### 📊 통계 및 시각화
+- **고급 차트 대시보드**: Chart.js 기반 인터랙티브 차트
+- **카테고리별 지출 차트**: 파이 차트로 비율 시각화
+- **결제수단별 지출 차트**: 도넛 차트로 분석
+- **일별 지출 추이**: 라인 차트로 시계열 분석
+- **요일별 지출 패턴**: 바 차트로 요일별 소비 분석
+- **최대 지출 TOP 5**: 큰 지출 내역 하이라이트
+- **실시간 통계**: 총 지출, 건수, 일평균, 지출일수
+- **데이터 내보내기**: CSV/Excel 파일로 필터링 내보내기
+
 ### 📱 사용자 경험
 - **반응형 디자인**: 모바일/태블릿/데스크톱 지원
 - **직관적 UI**: Bootstrap 5 기반 깔끔한 인터페이스
@@ -232,11 +242,12 @@ japan_travel_expense/
 - ✅ JPY to KRW conversion display on homepage and transport cards
 - ✅ Currency toggle functionality in expense form (₩/¥)
 - ✅ Automatic JPY to KRW conversion when submitting expenses
+- ✅ Advanced chart dashboard with Chart.js for interactive data visualization
+- ✅ Statistics page with comprehensive expense analysis and export functionality
 
 ## Notes
 
 - Project directory: `C:\workspace\japan_travel_expense`
 - Repository URL: https://github.com/kimyeonghoon/JAPAN_TRAVEL_EXPENSE.git
 - Claude Code permissions configured for git operations
-- to memorize
-- to memorize
+- to memorize 요구사항 반영하다가 리미트 걸림.

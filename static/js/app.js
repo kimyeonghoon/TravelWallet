@@ -10,12 +10,16 @@ $(document).ready(function() {
         loadExpenses();
         updateSummary();
         loadExchangeRate();
+        loadWallets();
         
         // Event listeners
         $('#expense-form').on('submit', handleExpenseSubmit);
         $(document).on('click', '.delete-expense', handleExpenseDelete);
         $(document).on('click', '.edit-expense', handleExpenseEdit);
         $('#logout-btn').on('click', handleLogout);
+        
+        // Payment method change listener
+        $('#payment-method').on('change', toggleWalletSelection);
         
         // Filter and sort event listeners
         $('#apply-filters').on('click', applyFilters);
@@ -51,15 +55,21 @@ $(document).ready(function() {
         const category = $('#category').val();
         const description = $('#description').val();
         const paymentMethod = $('#payment-method').val();
+        const walletId = $('#wallet-id').val();
         
         if (!amount || !category) {
             showAlert('금액과 카테고리를 입력해주세요.', 'warning');
             return;
         }
         
-        // Convert JPY to KRW if in JPY mode
-        if (isJpyMode && exchangeRate) {
-            amount = Math.round(amount * exchangeRate.jpy_to_krw_rate);
+        // Convert JPY to KRW if in JPY mode with validation
+        if (isJpyMode && exchangeRate && exchangeRate.jpy_to_krw_rate) {
+            if (exchangeRate.jpy_to_krw_rate > 0 && exchangeRate.jpy_to_krw_rate < 100) {
+                amount = Math.round(amount * exchangeRate.jpy_to_krw_rate);
+            } else {
+                showAlert('환율 정보가 올바르지 않습니다. 원화로 직접 입력해주세요.', 'warning');
+                return;
+            }
         }
         
         const expenseData = {
@@ -68,6 +78,11 @@ $(document).ready(function() {
             description: description || "",
             payment_method: paymentMethod
         };
+        
+        // Add wallet_id only if selected
+        if (walletId) {
+            expenseData.wallet_id = parseInt(walletId);
+        }
         
         // Show loading state
         const submitBtn = $('#expense-form button[type="submit"]');
@@ -140,7 +155,7 @@ $(document).ready(function() {
                                     </div>
                                     <p class="mb-1 text-muted">${expense.description || '설명 없음'}</p>
                                     <small class="text-muted">
-                                        <i class="fas fa-credit-card me-1"></i>${expense.payment_method || '현금'} • 
+                                        <i class="fas fa-credit-card me-1"></i>${expense.payment_method || '현금'}${expense.wallet_name ? ` (${expense.wallet_name})` : ''} • 
                                         <i class="fas fa-clock me-1"></i>${displayTime}
                                     </small>
                                 </div>
@@ -203,24 +218,8 @@ $(document).ready(function() {
             }
         });
         
-        // Load transport card balance
-        $.ajax({
-            url: '/api/transport-cards/summary?' + new Date().getTime(), // Cache busting
-            method: 'GET',
-            success: function(data) {
-                if (exchangeRate) {
-                    const krwAmount = Math.round(data.total_balance * exchangeRate.jpy_to_krw_rate);
-                    $('#transport-card-balance').text(`¥${data.total_balance.toLocaleString()} = ₩${krwAmount.toLocaleString()}`);
-                    $('#transport-card-exchange-info').text(`1엔 = ${exchangeRate.jpy_to_krw_rate.toFixed(2)}원`);
-                } else {
-                    $('#transport-card-balance').text(`¥${data.total_balance.toLocaleString()}`);
-                    $('#transport-card-exchange-info').text('환율 정보 로딩 중...');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error loading transport card balance:', error);
-            }
-        });
+        // Load transport card balance using unified function
+        updateTransportCardBalance();
     }
     
     // Load exchange rate
@@ -229,13 +228,32 @@ $(document).ready(function() {
             url: '/api/exchange-rate?' + new Date().getTime(),
             method: 'GET',
             success: function(data) {
+                // Validate exchange rate data
+                if (!validateExchangeRateData(data)) {
+                    console.error('Invalid exchange rate data received:', data);
+                    showAlert('환율 데이터가 올바르지 않습니다. 기본 환율을 사용합니다.', 'warning');
+                    return;
+                }
+                
                 exchangeRate = data;
                 updateExchangeRateDisplay();
-                updateTransportCardKrw();
+                updateTransportCardBalance();
+                // Reload wallets to update KRW conversion
+                loadWallets();
             },
             error: function(xhr, status, error) {
                 console.error('Error loading exchange rate:', error);
-                $('#exchange-rate-info').text('환율 정보를 불러올 수 없습니다');
+                let errorMessage = '환율 정보를 불러올 수 없습니다.';
+                
+                if (xhr.status === 500) {
+                    errorMessage = '환율 서비스에 일시적 문제가 있습니다. 잠시 후 다시 시도해주세요.';
+                } else if (xhr.status === 0) {
+                    errorMessage = '네트워크 연결을 확인해주세요.';
+                }
+                
+                $('#exchange-rate-info').text('환율 정보를 불러올 수 없음');
+                $('#exchange-rate').text('¥100 = ₩950 (예상)');
+                showAlert(errorMessage, 'warning');
             }
         });
     }
@@ -248,22 +266,29 @@ $(document).ready(function() {
         }
     }
     
-    // Update transport card KRW conversion
-    function updateTransportCardKrw() {
-        // This function is now integrated into the balance loading function
-        // Trigger balance refresh to update with new exchange rate
+    // Load transport card balance (unified function)
+    function updateTransportCardBalance() {
         $.ajax({
             url: '/api/transport-cards/summary?' + new Date().getTime(),
             method: 'GET',
             success: function(data) {
-                if (exchangeRate) {
+                if (exchangeRate && exchangeRate.jpy_to_krw_rate) {
                     const krwAmount = Math.round(data.total_balance * exchangeRate.jpy_to_krw_rate);
                     $('#transport-card-balance').text(`¥${data.total_balance.toLocaleString()} = ₩${krwAmount.toLocaleString()}`);
                     $('#transport-card-exchange-info').text(`1엔 = ${exchangeRate.jpy_to_krw_rate.toFixed(2)}원`);
+                } else {
+                    $('#transport-card-balance').text(`¥${data.total_balance.toLocaleString()}`);
+                    $('#transport-card-exchange-info').text('환율 정보 로딩 중...');
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Error updating transport card balance:', error);
+                console.error('Error loading transport card balance:', error);
+                $('#transport-card-balance').text('¥0');
+                $('#transport-card-exchange-info').text('데이터 로딩 실패');
+                
+                if (xhr.status !== 0) { // Avoid showing alerts for cancelled requests
+                    showAlert('교통카드 잔액을 불러올 수 없습니다.', 'danger');
+                }
             }
         });
     }
@@ -289,6 +314,12 @@ $(document).ready(function() {
         
         if (!amount || !exchangeRate) {
             $('#currency-conversion-info').text('');
+            return;
+        }
+        
+        // Validate exchange rate before conversion
+        if (!exchangeRate.jpy_to_krw_rate || exchangeRate.jpy_to_krw_rate <= 0 || exchangeRate.jpy_to_krw_rate > 100) {
+            $('#currency-conversion-info').text('환율 정보가 올바르지 않습니다');
             return;
         }
         
@@ -356,6 +387,12 @@ $(document).ready(function() {
                                         <option value="교통카드" ${expense.payment_method === '교통카드' ? 'selected' : ''}>교통카드</option>
                                     </select>
                                 </div>
+                                <div class="mb-3" id="edit-wallet-select-container" style="display: ${(expense.payment_method || '현금') === '현금' ? 'block' : 'none'};">
+                                    <label for="edit-wallet-id" class="form-label">지갑 선택 <small class="text-muted">(현금일 때만)</small></label>
+                                    <select class="form-select" id="edit-wallet-id">
+                                        <option value="">지갑을 선택하세요 (선택사항)</option>
+                                    </select>
+                                </div>
                                 <div class="mb-3">
                                     <label for="edit-amount" class="form-label">금액 (₩)</label>
                                     <input type="number" class="form-control" id="edit-amount" value="${expense.amount}" required>
@@ -393,6 +430,12 @@ $(document).ready(function() {
         const modal = new bootstrap.Modal(document.getElementById('editExpenseModal'));
         modal.show();
         
+        // Load wallets for edit modal
+        loadEditWallets(expense);
+        
+        // Add payment method change listener for edit modal
+        $('#edit-payment-method').on('change', toggleEditWalletSelection);
+        
         // Handle save button click
         $('#save-expense-btn').on('click', function() {
             const expenseId = parseInt($(this).data('id'));
@@ -409,6 +452,7 @@ $(document).ready(function() {
         const category = $('#edit-category').val();
         const description = $('#edit-description').val();
         const paymentMethod = $('#edit-payment-method').val();
+        const walletId = $('#edit-wallet-id').val();
         const date = $('#edit-date').val();
         const time = $('#edit-time').val();
         
@@ -416,6 +460,11 @@ $(document).ready(function() {
         if (category) updateData.category = category;
         if (description !== undefined) updateData.description = description;
         if (paymentMethod) updateData.payment_method = paymentMethod;
+        if (walletId) {
+            updateData.wallet_id = parseInt(walletId);
+        } else {
+            updateData.wallet_id = null;
+        }
         if (date) updateData.date = date;
         if (time) updateData.time = time;
         
@@ -707,4 +756,118 @@ $(document).ready(function() {
             loginModal.show();
         }
     });
+    
+    // Validate exchange rate data structure and values
+    function validateExchangeRateData(data) {
+        if (!data || typeof data !== 'object') {
+            return false;
+        }
+        
+        // Check required fields
+        if (!data.jpy_to_krw_rate || !data.rate_per_100_jpy) {
+            return false;
+        }
+        
+        // Check reasonable bounds for JPY to KRW rate (should be between 5 and 20)
+        if (data.jpy_to_krw_rate < 5 || data.jpy_to_krw_rate > 20) {
+            return false;
+        }
+        
+        // Check that rate_per_100_jpy is consistent
+        if (Math.abs(data.rate_per_100_jpy - (data.jpy_to_krw_rate * 100)) > 1) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Load wallets for selection
+    function loadWallets() {
+        $.get('/api/wallets')
+            .done(function(wallets) {
+                // Update wallet select dropdown
+                const walletSelect = $('#wallet-id');
+                if (walletSelect.length > 0) {
+                    walletSelect.html('<option value="">지갑을 선택하세요 (선택사항)</option>');
+                    
+                    wallets.forEach(function(wallet) {
+                        walletSelect.append(`<option value="${wallet.id}">${wallet.name} (¥${parseFloat(wallet.balance).toLocaleString()})</option>`);
+                    });
+                }
+                
+                // Update wallet balance card on homepage
+                updateWalletBalance(wallets);
+            })
+            .fail(function() {
+                console.error('Failed to load wallets');
+            });
+    }
+    
+    function updateWalletBalance(wallets) {
+        const walletBalanceElement = $('#wallet-balance');
+        if (walletBalanceElement.length === 0) return;
+        
+        // Calculate total wallet balance with validation
+        const totalBalance = wallets.reduce((sum, wallet) => {
+            const balance = parseFloat(wallet.balance) || 0;
+            return sum + balance;
+        }, 0);
+        
+        // Update display with JPY and KRW conversion
+        let currentRate = null;
+        if (exchangeRate && typeof exchangeRate === 'number' && !isNaN(exchangeRate)) {
+            currentRate = exchangeRate;
+        } else if (exchangeRate && exchangeRate.rate && typeof exchangeRate.rate === 'number' && !isNaN(exchangeRate.rate)) {
+            currentRate = exchangeRate.rate;
+        } else {
+            // Use default exchange rate (9.5) when API is unavailable
+            currentRate = 9.5;
+        }
+        
+        const krwAmount = totalBalance * currentRate;
+        walletBalanceElement.text(`¥${totalBalance.toLocaleString()} = ₩${Math.round(krwAmount).toLocaleString()}`);
+    }
+    
+    // Toggle wallet selection visibility based on payment method
+    function toggleWalletSelection() {
+        const paymentMethod = $('#payment-method').val();
+        const walletContainer = $('#wallet-select-container');
+        
+        if (paymentMethod === '현금') {
+            walletContainer.show();
+        } else {
+            walletContainer.hide();
+            $('#wallet-id').val(''); // Clear selection
+        }
+    }
+    
+    // Load wallets for edit modal and set current selection
+    function loadEditWallets(expense) {
+        $.get('/api/wallets')
+            .done(function(wallets) {
+                const walletSelect = $('#edit-wallet-id');
+                walletSelect.html('<option value="">지갑을 선택하세요 (선택사항)</option>');
+                
+                wallets.forEach(function(wallet) {
+                    const selected = expense.wallet_id === wallet.id ? 'selected' : '';
+                    walletSelect.append(`<option value="${wallet.id}" ${selected}>${wallet.name} (¥${parseFloat(wallet.balance).toLocaleString()})</option>`);
+                });
+            })
+            .fail(function() {
+                console.error('Failed to load wallets for edit modal');
+            });
+    }
+    
+    // Toggle wallet selection visibility for edit modal
+    function toggleEditWalletSelection() {
+        const paymentMethod = $('#edit-payment-method').val();
+        const walletContainer = $('#edit-wallet-select-container');
+        
+        if (paymentMethod === '현금') {
+            walletContainer.show();
+        } else {
+            walletContainer.hide();
+            $('#edit-wallet-id').val(''); // Clear selection
+        }
+    }
 });

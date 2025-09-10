@@ -34,6 +34,9 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/transport-cards"><i class="fas fa-subway me-1"></i>교통카드</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/wallets"><i class="fas fa-wallet me-1"></i>엔화지갑</a>
+                        </li>
                         {% if user %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
@@ -108,9 +111,23 @@
                 </div>
             </div>
 
-            <!-- Transport Card Balance with KRW Conversion -->
+            <!-- Wallet and Transport Card Balances -->
             <div class="row">
-                <div class="col-12 mb-3">
+                <div class="col-12 col-md-6 mb-3">
+                    <div class="card text-white bg-warning">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title">엔화지갑 총 잔액</h6>
+                                    <h4 id="wallet-balance">¥0 = ₩0</h4>
+                                    <small class="text-white-50" id="wallet-exchange-info">현재 환율 적용</small>
+                                </div>
+                                <i class="fas fa-wallet fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
                     <div class="card text-white bg-info">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
@@ -155,6 +172,12 @@
                                             <option value="체크카드">체크카드</option>
                                             <option value="신용카드">신용카드</option>
                                             <option value="교통카드">교통카드</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6 mb-3" id="wallet-select-container" style="display: none;">
+                                        <label for="wallet-id" class="form-label">지갑 선택 <small class="text-muted">(현금일 때만)</small></label>
+                                        <select class="form-select" id="wallet-id">
+                                            <option value="">지갑을 선택하세요 (선택사항)</option>
                                         </select>
                                     </div>
                                 </div>

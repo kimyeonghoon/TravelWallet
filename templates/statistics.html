@@ -60,9 +60,36 @@
         <!-- Main Content -->
         <div class="container mt-4">
             <div class="row">
-                <div class="col-12">
+                <div class="col-12 col-lg-8">
                     <h2><i class="fas fa-chart-bar me-2"></i>지출 통계 대시보드</h2>
                     <p class="text-muted">여행 경비 데이터를 시각적으로 분석해보세요.</p>
+                </div>
+                <div class="col-12 col-lg-4">
+                    <div class="d-flex justify-content-end mb-3">
+                        <div class="dropdown">
+                            <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-download me-2"></i>데이터 내보내기
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <button class="dropdown-item" onclick="exportData('csv')">
+                                        <i class="fas fa-file-csv me-2"></i>CSV 파일
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item" onclick="exportData('excel')">
+                                        <i class="fas fa-file-excel me-2"></i>Excel 파일
+                                    </button>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#exportFilterModal">
+                                        <i class="fas fa-filter me-2"></i>필터 설정하여 내보내기
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -246,6 +273,94 @@
                             </button>
                         </form>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Filter Modal -->
+    <div class="modal fade" id="exportFilterModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-filter me-2"></i>내보내기 필터 설정
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="export-alerts"></div>
+                    
+                    <form id="export-filter-form">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="export-category" class="form-label">카테고리</label>
+                                <select class="form-select" id="export-category">
+                                    <option value="">전체</option>
+                                    <option value="식비">식비</option>
+                                    <option value="교통비">교통비</option>
+                                    <option value="숙박비">숙박비</option>
+                                    <option value="입장료">입장료</option>
+                                    <option value="기타">기타</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="export-payment-method" class="form-label">결제수단</label>
+                                <select class="form-select" id="export-payment-method">
+                                    <option value="">전체</option>
+                                    <option value="현금">현금</option>
+                                    <option value="체크카드">체크카드</option>
+                                    <option value="신용카드">신용카드</option>
+                                    <option value="교통카드">교통카드</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="export-date-from" class="form-label">시작 날짜</label>
+                                <input type="date" class="form-control" id="export-date-from">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="export-date-to" class="form-label">종료 날짜</label>
+                                <input type="date" class="form-control" id="export-date-to">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">파일 형식</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="export-format" id="format-csv" value="csv" checked>
+                                        <label class="form-check-label" for="format-csv">
+                                            <i class="fas fa-file-csv me-2"></i>CSV 파일
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="export-format" id="format-excel" value="excel">
+                                        <label class="form-check-label" for="format-excel">
+                                            <i class="fas fa-file-excel me-2"></i>Excel 파일
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <small>필터를 설정하지 않으면 모든 지출 데이터가 내보내집니다.</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-success" onclick="exportFilteredData()">
+                        <i class="fas fa-download me-2"></i>
+                        <span id="export-btn-text">내보내기</span>
+                    </button>
                 </div>
             </div>
         </div>

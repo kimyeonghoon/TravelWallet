@@ -439,3 +439,100 @@ $(document).ready(function() {
         }
     }
 });
+
+// Export functionality - global functions
+function exportData(format) {
+    const url = `/api/export/${format}`;
+    
+    // Create a temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Show success message
+    showExportAlert(`${format.toUpperCase()} 파일 다운로드가 시작됩니다.`, 'success');
+}
+
+function exportFilteredData() {
+    const category = $('#export-category').val();
+    const paymentMethod = $('#export-payment-method').val();
+    const dateFrom = $('#export-date-from').val();
+    const dateTo = $('#export-date-to').val();
+    const format = $('input[name="export-format"]:checked').val();
+    
+    // Validate date range
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+        showExportAlert('시작 날짜는 종료 날짜보다 이전이어야 합니다.', 'warning');
+        return;
+    }
+    
+    // Build query parameters
+    let params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (paymentMethod) params.append('payment_method', paymentMethod);
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+    
+    const url = `/api/export/${format}${params.toString() ? '?' + params.toString() : ''}`;
+    
+    // Show loading state
+    const exportBtn = $('#export-btn-text');
+    exportBtn.html('<span class="spinner-border spinner-border-sm me-2"></span>생성 중...');
+    $('.btn-success').prop('disabled', true);
+    
+    // Create and trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Reset button state
+    setTimeout(() => {
+        exportBtn.html('<i class="fas fa-download me-2"></i>내보내기');
+        $('.btn-success').prop('disabled', false);
+        
+        // Show success message
+        showExportAlert(`필터가 적용된 ${format.toUpperCase()} 파일 다운로드가 시작됩니다.`, 'success');
+        
+        // Close modal after success
+        setTimeout(() => {
+            $('#exportFilterModal').modal('hide');
+            resetExportForm();
+        }, 1500);
+    }, 1000);
+}
+
+function showExportAlert(message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    $('#export-alerts').html(alertHtml);
+    
+    // Auto-hide success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            $('#export-alerts .alert').fadeOut();
+        }, 3000);
+    }
+}
+
+function resetExportForm() {
+    $('#export-filter-form')[0].reset();
+    $('#export-alerts').empty();
+    $('#format-csv').prop('checked', true);
+}
+
+// Reset form when modal is hidden
+$('#exportFilterModal').on('hidden.bs.modal', function() {
+    resetExportForm();
+});

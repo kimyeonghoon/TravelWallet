@@ -39,7 +39,9 @@
       "Bash(sqlite3:*)",
       "Bash(pkill:*)",
       "Bash(find:*)",
-      "Bash(git rebase:*)"
+      "Bash(git rebase:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []

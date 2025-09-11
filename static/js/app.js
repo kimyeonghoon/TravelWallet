@@ -1,22 +1,47 @@
+/**
+ * 일본 여행 경비 추적 애플리케이션 메인 JavaScript
+ * 
+ * 이 파일은 애플리케이션의 프론트엔드 로직을 담당합니다.
+ * 
+ * 주요 기능:
+ * - 지출 내역 CRUD 관리
+ * - 실시간 환율 연동 및 통화 변환
+ * - 교통카드 및 엔화지갑 연동
+ * - 텔레그램 기반 로그인 시스템
+ * - 통계 및 필터링 기능
+ * 
+ * 기술 스택: jQuery, Bootstrap 5, Chart.js
+ * API 통신: RESTful API (JSON)
+ */
+
 $(document).ready(function() {
-    // Exchange rate data
-    let exchangeRate = null;
-    let isJpyMode = false; // false = KRW, true = JPY
+    // ==================== 전역 변수 ====================
     
-    // Initialize the app
+    // 환율 관련 데이터
+    let exchangeRate = null;  // 현재 JPY-KRW 환율 정보
+    let isJpyMode = false;   // 통화 입력 모드 (false = KRW, true = JPY)
+    
+    // ==================== 애플리케이션 초기화 ====================
+    
+    // 페이지 로드 시 앱 초기화
     initApp();
     
     function initApp() {
-        loadExpenses();
-        updateSummary();
-        loadExchangeRate();
-        loadWallets();
+        // 핵심 데이터 로딩
+        loadExpenses();      // 지출 내역 로딩
+        updateSummary();     // 요약 정보 업데이트
+        loadExchangeRate();  // 환율 정보 로딩
+        loadWallets();       // 지갑 정보 로딩
         
-        // Event listeners
-        $('#expense-form').on('submit', handleExpenseSubmit);
-        $(document).on('click', '.delete-expense', handleExpenseDelete);
-        $(document).on('click', '.edit-expense', handleExpenseEdit);
-        $('#logout-btn').on('click', handleLogout);
+        // ==================== 이벤트 리스너 등록 ====================
+        
+        // 지출 관련 이벤트
+        $('#expense-form').on('submit', handleExpenseSubmit);           // 지출 추가
+        $(document).on('click', '.delete-expense', handleExpenseDelete); // 지출 삭제
+        $(document).on('click', '.edit-expense', handleExpenseEdit);     // 지출 수정
+        
+        // 인증 관련 이벤트
+        $('#logout-btn').on('click', handleLogout);  // 로그아웃
         
         // Payment method change listener
         $('#payment-method').on('change', toggleWalletSelection);

@@ -1,17 +1,44 @@
-import requests
-import os
-from datetime import datetime
-from typing import Dict, Optional
-import logging
+"""
+환율 서비스
 
+이 파일은 한국수출입은행 공식 환율 API를 사용하여 실시간 JPY-KRW 환율을 제공합니다.
+API 호출 최적화를 위한 캐싱 기능과 API 장애 시 폴백 처리를 포함합니다.
+
+주요 기능:
+- 한국수출입은행 공식 환율 API 연동
+- 5분간 환율 데이터 캐싱으로 API 호출 최적화
+- API 장애 시 기본 환율(9.5원) 제공
+- 일본 엔화(JPY) → 한국 원화(KRW) 환율 전문 처리
+
+API 정보:
+- 제공: 한국수출입은행 (Korea Export-Import Bank)
+- 갱신 주기: 영업일 기준 실시간
+- 기본 환율: 1엔 = 9.5원 (API 장애 시)
+"""
+
+# 외부 라이브러리 임포트
+import requests  # HTTP API 호출
+import os  # 환경변수 접근
+from datetime import datetime  # 캐시 타임스탬프 관리
+from typing import Dict, Optional  # 타입 힌팅
+import logging  # 로깅
+
+# 로거 설정
 logger = logging.getLogger(__name__)
 
 class ExchangeRateService:
+    """
+    환율 정보 제공 서비스
+    한국수출입은행 API를 통해 실시간 JPY-KRW 환율을 제공하며,
+    캐싱과 폴백 처리로 안정적인 서비스를 보장합니다.
+    """
+    
     def __init__(self):
-        self.api_key = os.getenv("KOREA_EXIM_KEY")
-        self.base_url = "https://www.koreaexim.go.kr/site/program/financial/exchangeJSON"
-        self.cache = {}
-        self.cache_timestamp = None
+        """환율 서비스 초기화"""
+        self.api_key = os.getenv("KOREA_EXIM_KEY")  # 한국수출입은행 API 키
+        self.base_url = "https://www.koreaexim.go.kr/site/program/financial/exchangeJSON"  # API 엔드포인트
+        self.cache = {}  # 환율 데이터 캐시
+        self.cache_timestamp = None  # 캐시 타임스탬프
         
     def get_exchange_rates(self, search_date: Optional[str] = None) -> Dict:
         """

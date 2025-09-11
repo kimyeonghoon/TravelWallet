@@ -14,7 +14,7 @@
 # SQLAlchemy 및 관련 라이브러리 임포트
 from sqlalchemy.orm import Session, selectinload  # 데이터베이스 세션 및 관계 로딩
 from sqlalchemy import func  # SQL 함수 (COUNT, SUM 등)
-from models import Expense, TransportCard, Wallet  # 데이터베이스 모델
+from models import Expense, TransportCard, Wallet, now_kst  # 데이터베이스 모델 및 한국 시간 함수
 from datetime import datetime, date  # 날짜/시간 처리
 from typing import List, Optional  # 타입 힌팅
 
@@ -49,7 +49,7 @@ class ExpenseService:
             description=description,
             date=date.today().strftime("%Y-%m-%d"),
             payment_method=payment_method,
-            timestamp=datetime.utcnow()
+            timestamp=now_kst()
         )
         db.add(expense)
         db.commit()
@@ -362,8 +362,8 @@ class TransportCardService:
         card = TransportCard(
             name=name,
             balance=balance,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=now_kst(),
+            updated_at=now_kst()
         )
         db.add(card)
         db.commit()
@@ -389,7 +389,7 @@ class TransportCardService:
                 card.name = name
             if balance is not None:
                 card.balance = balance
-            card.updated_at = datetime.utcnow()
+            card.updated_at = now_kst()
             
             db.commit()
             db.refresh(card)
@@ -421,8 +421,8 @@ class WalletService:
         wallet = Wallet(
             name=name,
             balance=balance,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=now_kst(),
+            updated_at=now_kst()
         )
         db.add(wallet)
         db.commit()
@@ -448,7 +448,7 @@ class WalletService:
                 wallet.name = name
             if balance is not None:
                 wallet.balance = balance
-            wallet.updated_at = datetime.utcnow()
+            wallet.updated_at = now_kst()
             
             db.commit()
             db.refresh(wallet)

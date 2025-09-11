@@ -1,33 +1,56 @@
+"""
+인증 및 보안 서비스
+
+이 파일은 애플리케이션의 인증 시스템을 관리합니다.
+텔레그램 봇을 통한 2FA 인증, JWT 토큰 관리, IP 기반 보안 기능을 제공합니다.
+
+주요 기능:
+- 텔레그램 봇을 통한 6자리 인증 코드 발송
+- JWT 토큰 생성 및 검증
+- IP 기반 로그인 시도 제한 (Rate Limiting)
+- 사용자 인증 및 권한 관리
+
+보안 특징:
+- 이메일 기반 사전 승인 시스템
+- 15분 토큰 만료로 보안 강화
+- IP별 로그인 시도 횟수 제한 (5회 실패 시 10분 차단)
+"""
+
+# 표준 라이브러리 및 외부 라이브러리 임포트
 import os
-import secrets
-import random
-import requests
-from datetime import datetime, timedelta
-from typing import Optional
+import secrets  # 안전한 랜덤 문자열 생성
+import random  # 6자리 코드 생성용
+import requests  # 텔레그램 API 호출
+from datetime import datetime, timedelta  # 시간 관련 처리
+from typing import Optional  # 타입 힌팅
 
-from dotenv import load_dotenv
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from sqlalchemy.orm import Session
+# 외부 라이브러리
+from dotenv import load_dotenv  # 환경변수 로딩
+from jose import JWTError, jwt  # JWT 토큰 처리
+from passlib.context import CryptContext  # 비밀번호 해싱 (미사용)
+from sqlalchemy.orm import Session  # 데이터베이스 세션
 
-from models import User, LoginToken, IPBan
+# 자체 모듈
+from models import User, LoginToken, IPBan  # 데이터베이스 모델
 
-# Load environment variables
+# 환경변수 로딩
 load_dotenv()
 
-# Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-this-in-production")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+# ==================== 설정 값 정의 ====================
 
-# Telegram Bot configuration
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_BOT_NAME = os.getenv("TELEGRAM_BOT_NAME", "일본 여행 경비 인증")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "5496782369")
-APP_URL = os.getenv("APP_URL", "http://localhost:8000")
+# JWT 토큰 설정
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-this-in-production")  # JWT 서명 키
+ALGORITHM = os.getenv("ALGORITHM", "HS256")  # JWT 암호화 알고리즘
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))  # 토큰 만료 시간 (15분)
 
-# Authentication configuration
-ALLOWED_EMAIL = os.getenv("ALLOWED_EMAIL", "me@yeonghoon.kim")
+# 텔레그램 봇 설정
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # 텔레그램 봇 토큰
+TELEGRAM_BOT_NAME = os.getenv("TELEGRAM_BOT_NAME", "일본 여행 경비 인증")  # 봇 이름
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "5496782369")  # 고정 Chat ID
+APP_URL = os.getenv("APP_URL", "http://localhost:8000")  # 애플리케이션 URL
+
+# 인증 설정
+ALLOWED_EMAIL = os.getenv("ALLOWED_EMAIL", "me@yeonghoon.kim")  # 허용된 이메일 (사전 승인 시스템)
 MAX_LOGIN_ATTEMPTS = int(os.getenv("MAX_LOGIN_ATTEMPTS", "5"))
 BAN_DURATION_MINUTES = int(os.getenv("BAN_DURATION_MINUTES", "10"))
 

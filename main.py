@@ -1,83 +1,108 @@
+"""
+일본 여행 경비 추적 애플리케이션 메인 서버
+
+이 애플리케이션은 일본 여행 중 발생하는 경비를 추적하고 관리하는 웹 애플리케이션입니다.
+주요 기능:
+- 지출 내역 관리 (CRUD)
+- 교통카드 잔액 관리
+- 엔화 지갑 관리
+- 실시간 환율 연동 (한국수출입은행 API)
+- 텔레그램 봇을 통한 인증 시스템
+- 통계 및 데이터 내보내기
+
+기술 스택: FastAPI, SQLite, Bootstrap 5, jQuery
+"""
+
+# FastAPI 및 관련 라이브러리 임포트
 from fastapi import FastAPI, Request, Depends, HTTPException, Cookie
 import ipaddress
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from typing import List, Optional
+from fastapi.staticfiles import StaticFiles  # 정적 파일 서빙
+from fastapi.templating import Jinja2Templates  # HTML 템플릿 렌더링
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials  # JWT 인증
+from sqlalchemy.orm import Session  # 데이터베이스 세션 관리
+from pydantic import BaseModel  # 데이터 검증 모델
+from typing import List, Optional  # 타입 힌팅
 import os
 
-from models import create_tables, get_db, User, TransportCard, Wallet
-from database import ExpenseService, TransportCardService, WalletService
-from auth import AuthService
-from exchange_service import exchange_service
+# 자체 모듈 임포트
+from models import create_tables, get_db, User, TransportCard, Wallet  # 데이터베이스 모델
+from database import ExpenseService, TransportCardService, WalletService  # 데이터베이스 서비스
+from auth import AuthService  # 인증 서비스
+from exchange_service import exchange_service  # 환율 서비스
 
-# Create database tables
+# 애플리케이션 시작 시 데이터베이스 테이블 생성
 create_tables()
 
-app = FastAPI(title="Japan Travel Expense Tracker")
+# FastAPI 애플리케이션 인스턴스 생성
+app = FastAPI(title="Japan Travel Expense Tracker", description="일본 여행 경비 추적 시스템")
 
-# Add CORS middleware for nginx proxy compatibility
+# CORS 미들웨어 추가 (nginx 프록시 호환성을 위함)
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure as needed for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"],  # 프로덕션에서는 특정 도메인으로 제한 필요
+    allow_credentials=True,  # 쿠키 및 인증 정보 허용
+    allow_methods=["*"],  # 모든 HTTP 메서드 허용
+    allow_headers=["*"],  # 모든 헤더 허용
 )
 
-# Static files and templates - with proper directory handling
-static_dir = os.path.join(os.path.dirname(__file__), "static")
-app.mount("/static", StaticFiles(directory=static_dir, html=True), name="static")
-templates = Jinja2Templates(directory="templates")
+# 정적 파일 및 템플릿 설정
+static_dir = os.path.join(os.path.dirname(__file__), "static")  # 정적 파일 디렉토리 경로
+app.mount("/static", StaticFiles(directory=static_dir, html=True), name="static")  # CSS, JS, 이미지 파일 서빙
+templates = Jinja2Templates(directory="templates")  # HTML 템플릿 디렉토리 설정
 
-# Startup event to create database tables
+# 애플리케이션 시작 이벤트 - 데이터베이스 초기화
 @app.on_event("startup")
 async def startup_event():
-    """Create database tables on application startup."""
+    """애플리케이션 시작 시 데이터베이스 테이블을 생성합니다."""
     from models import create_tables
     create_tables()
-    print("Database tables created successfully")
+    print("데이터베이스 테이블이 성공적으로 생성되었습니다")
 
-# Pydantic models for API
+# ==================== API 요청/응답 모델 정의 (Pydantic) ====================
+
 class ExpenseCreate(BaseModel):
-    amount: float
-    category: str
-    description: str = ""
-    payment_method: str = "현금"
-    wallet_id: Optional[int] = None
+    """지출 생성 요청 모델"""
+    amount: float  # 지출 금액
+    category: str  # 지출 카테고리 (식비, 교통비, 숙박비, 입장료, 기타)
+    description: str = ""  # 지출 설명 (선택사항)
+    payment_method: str = "현금"  # 결제 수단 (현금, 체크카드, 신용카드, 교통카드)
+    wallet_id: Optional[int] = None  # 지갑 ID (현금 결제 시 선택사항)
 
 class ExpenseResponse(BaseModel):
-    id: int
-    amount: float
-    category: str
-    description: str
-    date: str
-    payment_method: str
-    wallet_id: Optional[int] = None
-    wallet_name: Optional[str] = None
-    timestamp: str
+    """지출 조회 응답 모델"""
+    id: int  # 지출 고유 ID
+    amount: float  # 지출 금액
+    category: str  # 지출 카테고리
+    description: str  # 지출 설명
+    date: str  # 지출 날짜 (YYYY-MM-DD 형식)
+    payment_method: str  # 결제 수단
+    wallet_id: Optional[int] = None  # 지갑 ID
+    wallet_name: Optional[str] = None  # 지갑 이름
+    timestamp: str  # 등록 시간 (ISO 형식)
 
 class ExpenseUpdate(BaseModel):
-    amount: Optional[float] = None
-    category: Optional[str] = None
-    description: Optional[str] = None
-    date: Optional[str] = None
-    time: Optional[str] = None
-    payment_method: Optional[str] = None
-    wallet_id: Optional[int] = None
+    """지출 수정 요청 모델 (모든 필드 선택사항)"""
+    amount: Optional[float] = None  # 수정할 금액
+    category: Optional[str] = None  # 수정할 카테고리
+    description: Optional[str] = None  # 수정할 설명
+    date: Optional[str] = None  # 수정할 날짜
+    time: Optional[str] = None  # 수정할 시간
+    payment_method: Optional[str] = None  # 수정할 결제 수단
+    wallet_id: Optional[int] = None  # 수정할 지갑 ID
 
 class SummaryResponse(BaseModel):
-    total_expense: float
-    today_expense: float
+    """지출 요약 정보 응답 모델"""
+    total_expense: float  # 총 지출 금액
+    today_expense: float  # 오늘 지출 금액
 
-# Transport Card models
+# ==================== 교통카드 관련 모델 ====================
+
 class TransportCardCreate(BaseModel):
-    name: str
-    balance: float = 0.0
+    """교통카드 생성 요청 모델"""
+    name: str  # 교통카드 이름 (예: 스이카, 파스모 등)
+    balance: float = 0.0  # 초기 잔액 (엔화)
 
 class TransportCardUpdate(BaseModel):
     name: Optional[str] = None

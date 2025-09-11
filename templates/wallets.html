@@ -248,13 +248,13 @@
         window.currentUser = {% if user %}{{ user.telegram_chat_id | tojson }}{% else %}null{% endif %};
     </script>
     
+    <!-- Custom JS -->
+    <script src="/static/js/app.js"></script>
+    
     <!-- Wallet Management JavaScript -->
     <script>
         $(document).ready(function() {
             loadWallets();
-            
-            // Login functionality
-            setupLoginFunctionality();
         });
 
         function loadWallets() {
@@ -437,120 +437,6 @@
             }, 3000);
         }
 
-        // Login functionality (copied from transport-cards.html)
-        function setupLoginFunctionality() {
-            // Email form submission
-            $('#email-form').on('submit', function(e) {
-                e.preventDefault();
-                const email = $('#login-email').val().trim();
-                
-                if (!email) {
-                    showLoginAlert('이메일을 입력해주세요.', 'warning');
-                    return;
-                }
-                
-                // Show loading state
-                $('#request-login-btn').prop('disabled', true);
-                $('#request-btn-text').text('코드 전송 중...');
-                
-                // Send login request
-                $.ajax({
-                    url: '/api/request-login',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ email: email }),
-                    success: function(response) {
-                        showLoginAlert(response.message, 'success');
-                        $('#login-step1').hide();
-                        $('#login-step2').show();
-                    },
-                    error: function(xhr) {
-                        const response = xhr.responseJSON;
-                        showLoginAlert(response?.message || '코드 전송에 실패했습니다.', 'danger');
-                    },
-                    complete: function() {
-                        $('#request-login-btn').prop('disabled', false);
-                        $('#request-btn-text').text('로그인 코드 받기');
-                    }
-                });
-            });
-            
-            // Code verification form submission
-            $('#login-code-form').on('submit', function(e) {
-                e.preventDefault();
-                const code = $('#login-code').val().trim();
-                
-                if (!code || code.length !== 6) {
-                    showLoginAlert('6자리 코드를 입력해주세요.', 'warning');
-                    return;
-                }
-                
-                // Show loading state
-                $('#verify-btn-text').text('확인 중...');
-                
-                // Verify login code
-                $.ajax({
-                    url: '/api/verify-login',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ code: code }),
-                    success: function(response) {
-                        // Store token
-                        localStorage.setItem('token', response.token);
-                        showAlert('로그인에 성공했습니다.', 'success');
-                        $('#loginModal').modal('hide');
-                        // Reload page to show authenticated state
-                        setTimeout(() => location.reload(), 1000);
-                    },
-                    error: function(xhr) {
-                        const response = xhr.responseJSON;
-                        showLoginAlert(response?.message || '로그인에 실패했습니다.', 'danger');
-                    },
-                    complete: function() {
-                        $('#verify-btn-text').text('로그인');
-                    }
-                });
-            });
-            
-            // Back to step 1
-            $('#back-to-step1').on('click', function() {
-                $('#login-step2').hide();
-                $('#login-step1').show();
-                $('#login-code').val('');
-                clearLoginAlerts();
-            });
-            
-            // Logout functionality
-            $('#logout-btn').on('click', function(e) {
-                e.preventDefault();
-                localStorage.removeItem('token');
-                showAlert('로그아웃되었습니다.', 'info');
-                setTimeout(() => location.reload(), 1000);
-            });
-            
-            // Reset modal when closed
-            $('#loginModal').on('hidden.bs.modal', function() {
-                $('#login-step2').hide();
-                $('#login-step1').show();
-                $('#email-form')[0].reset();
-                $('#login-code-form')[0].reset();
-                clearLoginAlerts();
-            });
-        }
-        
-        function showLoginAlert(message, type) {
-            const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            $('#login-alerts').html(alertHtml);
-        }
-        
-        function clearLoginAlerts() {
-            $('#login-alerts').empty();
-        }
     </script>
 </body>
 </html>

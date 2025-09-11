@@ -1,15 +1,46 @@
-from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import func
-from models import Expense, TransportCard, Wallet
-from datetime import datetime, date
-from typing import List, Optional
+"""
+데이터베이스 서비스 레이어
+
+이 파일은 데이터베이스 CRUD(Create, Read, Update, Delete) 작업을 처리하는
+서비스 클래스들을 정의합니다. 각 테이블(지출, 교통카드, 지갑)에 대한
+비즈니스 로직과 데이터 액세스 로직을 포함합니다.
+
+주요 서비스:
+- ExpenseService: 지출 내역 관리
+- TransportCardService: 교통카드 관리  
+- WalletService: 엔화 지갑 관리
+"""
+
+# SQLAlchemy 및 관련 라이브러리 임포트
+from sqlalchemy.orm import Session, selectinload  # 데이터베이스 세션 및 관계 로딩
+from sqlalchemy import func  # SQL 함수 (COUNT, SUM 등)
+from models import Expense, TransportCard, Wallet  # 데이터베이스 모델
+from datetime import datetime, date  # 날짜/시간 처리
+from typing import List, Optional  # 타입 힌팅
 
 class ExpenseService:
-    """Service class for expense database operations."""
+    """
+    지출 내역 관리 서비스
+    지출 데이터의 생성, 조회, 수정, 삭제 및 통계 기능을 제공
+    """
     
     @staticmethod
     def create_expense(db: Session, user_id: int, amount: float, category: str, description: str = "", payment_method: str = "현금", wallet_id: int = None) -> Expense:
-        """Create a new expense record for a user."""
+        """
+        새로운 지출 내역을 생성합니다.
+        
+        Args:
+            db: 데이터베이스 세션
+            user_id: 사용자 ID
+            amount: 지출 금액 (원화)
+            category: 지출 카테고리
+            description: 지출 설명
+            payment_method: 결제 수단
+            wallet_id: 지갑 ID (현금 결제 시 선택사항)
+            
+        Returns:
+            생성된 지출 객체
+        """
         expense = Expense(
             user_id=user_id,
             wallet_id=wallet_id,

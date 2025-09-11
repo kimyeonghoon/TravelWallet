@@ -38,7 +38,8 @@
       "mcp__ide__executeCode",
       "Bash(sqlite3:*)",
       "Bash(pkill:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git rebase:*)"
     ],
     "deny": [],
     "ask": []

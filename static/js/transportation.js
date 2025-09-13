@@ -26,6 +26,7 @@ $(document).ready(function() {
     function initTransportationApp() {
         // 핵심 데이터 로딩
         loadTransportationRecords();  // 교통수단 기록 로딩
+        populateTimeOptions();        // 시간 드롭다운 옵션 생성
 
         // ==================== 이벤트 리스너 등록 ====================
 
@@ -44,6 +45,26 @@ $(document).ready(function() {
         // 필터 및 정렬 이벤트
         $('#apply-filters').on('click', applyFilters);
         $('#filter-category, #filter-date-from, #filter-date-to, #sort-by, #sort-order').on('change', applyFilters);
+    }
+
+    /**
+     * 24시간 시간 드롭다운 옵션 생성
+     */
+    function populateTimeOptions() {
+        const timeSelectors = ['#departure-time', '#arrival-time', '#edit-departure-time', '#edit-arrival-time'];
+
+        timeSelectors.forEach(selector => {
+            const selectElement = $(selector);
+            if (selectElement.length) {
+                // 기존 옵션 유지 (빈 옵션)
+                for (let hour = 0; hour < 24; hour++) {
+                    for (let minute = 0; minute < 60; minute += 15) { // 15분 간격
+                        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                        selectElement.append(`<option value="${timeString}">${timeString}</option>`);
+                    }
+                }
+            }
+        });
     }
 
     // ==================== 교통수단 기록 관리 함수 ====================
@@ -81,20 +102,18 @@ $(document).ready(function() {
     }
 
     /**
-     * 교통수단 기록 목록 화면 표시
+     * 교통수단 기록 목록 화면 표시 (지출내역 스타일)
      */
     function displayTransportationRecords(records) {
-        const tbody = $('#transportation-list');
-        tbody.empty();
+        const container = $('#transportation-list');
+        container.empty();
 
         if (records.length === 0) {
-            tbody.append(`
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
-                        <i class="fas fa-inbox fa-2x mb-2"></i><br>
-                        등록된 교통수단 기록이 없습니다.
-                    </td>
-                </tr>
+            container.append(`
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-inbox fa-3x mb-3"></i><br>
+                    <h5>등록된 교통수단 기록이 없습니다.</h5>
+                </div>
             `);
             return;
         }
@@ -102,27 +121,49 @@ $(document).ready(function() {
         records.forEach(function(record) {
             const isLoggedIn = $('nav .dropdown-toggle').length > 0; // 로그인 여부 확인
             const actionButtons = isLoggedIn ? `
-                <button class="btn btn-sm btn-outline-primary me-1 edit-transportation" data-id="${record.id}">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger delete-transportation" data-id="${record.id}">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary edit-transportation" data-id="${record.id}" title="수정">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-danger delete-transportation" data-id="${record.id}" title="삭제">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             ` : '';
 
-            const actionColumn = isLoggedIn ? `<td>${actionButtons}</td>` : '';
+            // 제목 형태: 교통수단 - 이용회사 (회사명이 있는 경우)
+            const title = record.company ? `${record.category} - ${record.company}` : record.category;
 
-            tbody.append(`
-                <tr>
-                    <td>
-                        <span class="badge bg-${getCategoryBadgeColor(record.category)}">${record.category}</span>
-                    </td>
-                    <td>${record.departure_time}</td>
-                    <td>${record.arrival_time}</td>
-                    <td>${record.memo || '-'}</td>
-                    <td>${formatDate(record.date)}</td>
-                    ${actionColumn}
-                </tr>
+            container.append(`
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <!-- 첫 번째 줄: 교통수단, 이용회사 -->
+                                <h6 class="card-title mb-2">
+                                    <span class="badge bg-${getCategoryBadgeColor(record.category)} me-2">${record.category}</span>
+                                    ${record.company ? `<span class="text-muted">${record.company}</span>` : ''}
+                                </h6>
+
+                                <!-- 두 번째 줄: 메모 -->
+                                ${record.memo ? `<p class="card-text text-muted mb-2"><i class="fas fa-sticky-note me-1"></i>${record.memo}</p>` : ''}
+
+                                <!-- 세 번째 줄: 이용일, 출발시간, 도착시간 -->
+                                <div class="d-flex flex-wrap text-sm text-muted">
+                                    <span class="me-3">
+                                        <i class="fas fa-calendar me-1"></i>${formatDate(record.date)}
+                                    </span>
+                                    <span class="me-3">
+                                        <i class="fas fa-clock me-1"></i>${record.departure_time} → ${record.arrival_time}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- 관리 버튼 -->
+                            ${isLoggedIn ? `<div class="ms-3">${actionButtons}</div>` : ''}
+                        </div>
+                    </div>
+                </div>
             `);
         });
     }
@@ -156,6 +197,7 @@ $(document).ready(function() {
 
         const formData = {
             category: $('#category').val(),
+            company: $('#company').val(),
             departure_time: $('#departure-time').val(),
             arrival_time: $('#arrival-time').val(),
             memo: $('#memo').val()
@@ -212,6 +254,7 @@ $(document).ready(function() {
                     // 모달 폼에 데이터 채우기
                     $('#edit-transportation-id').val(record.id);
                     $('#edit-category').val(record.category);
+                    $('#edit-company').val(record.company);
                     $('#edit-departure-time').val(record.departure_time);
                     $('#edit-arrival-time').val(record.arrival_time);
                     $('#edit-memo').val(record.memo);
@@ -232,6 +275,7 @@ $(document).ready(function() {
     function handleTransportationSave() {
         const updateData = {
             category: $('#edit-category').val(),
+            company: $('#edit-company').val(),
             departure_time: $('#edit-departure-time').val(),
             arrival_time: $('#edit-arrival-time').val(),
             memo: $('#edit-memo').val(),

@@ -139,6 +139,7 @@ class WalletResponse(BaseModel):
 class TransportationCreate(BaseModel):
     """교통수단 기록 생성 요청 모델"""
     category: str  # 교통수단 카테고리 (JR, 전철, 버스, 배, 기타)
+    company: str = ""  # 이용회사 (서일본, 히로덴 등)
     departure_time: str  # 출발시간 (HH:MM)
     arrival_time: str  # 도착시간 (HH:MM)
     memo: str = ""  # 메모 (출발지-도착지, 노선 등)
@@ -146,6 +147,7 @@ class TransportationCreate(BaseModel):
 class TransportationUpdate(BaseModel):
     """교통수단 기록 수정 요청 모델 (모든 필드 선택사항)"""
     category: Optional[str] = None
+    company: Optional[str] = None
     departure_time: Optional[str] = None
     arrival_time: Optional[str] = None
     memo: Optional[str] = None
@@ -156,6 +158,7 @@ class TransportationResponse(BaseModel):
     id: int
     user_id: Optional[int] = None
     category: str
+    company: str
     departure_time: str
     arrival_time: str
     memo: str
@@ -604,6 +607,7 @@ async def create_transportation(
             db=db,
             user_id=current_user.id,
             category=transportation.category,
+            company=transportation.company,
             departure_time=transportation.departure_time,
             arrival_time=transportation.arrival_time,
             memo=transportation.memo
@@ -651,6 +655,7 @@ async def update_transportation(
         user_id=current_user.id,
         transportation_id=transportation_id,
         category=transportation_update.category,
+        company=transportation_update.company,
         departure_time=transportation_update.departure_time,
         arrival_time=transportation_update.arrival_time,
         memo=transportation_update.memo,

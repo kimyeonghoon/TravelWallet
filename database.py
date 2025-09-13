@@ -479,7 +479,7 @@ class TransportationService:
 
     @staticmethod
     def create_transportation(db: Session, user_id: int, category: str, departure_time: str,
-                             arrival_time: str, memo: str = "") -> Transportation:
+                             arrival_time: str, memo: str = "", company: str = "") -> Transportation:
         """
         새로운 교통수단 이용 기록을 생성합니다.
 
@@ -490,6 +490,7 @@ class TransportationService:
             departure_time: 출발시간 (HH:MM)
             arrival_time: 도착시간 (HH:MM)
             memo: 메모 (출발지-도착지, 노선 등)
+            company: 이용회사 (서일본, 히로덴 등)
 
         Returns:
             생성된 교통수단 기록 객체
@@ -497,6 +498,7 @@ class TransportationService:
         transportation = Transportation(
             user_id=user_id,
             category=category,
+            company=company,
             departure_time=departure_time,
             arrival_time=arrival_time,
             memo=memo,
@@ -521,12 +523,14 @@ class TransportationService:
     @staticmethod
     def update_transportation(db: Session, transportation_id: int, category: str = None,
                              departure_time: str = None, arrival_time: str = None,
-                             memo: str = None, transportation_date: str = None) -> Optional[Transportation]:
+                             memo: str = None, company: str = None, transportation_date: str = None) -> Optional[Transportation]:
         """교통수단 기록을 수정합니다."""
         transportation = db.query(Transportation).filter(Transportation.id == transportation_id).first()
         if transportation:
             if category is not None:
                 transportation.category = category
+            if company is not None:
+                transportation.company = company
             if departure_time is not None:
                 transportation.departure_time = departure_time
             if arrival_time is not None:
@@ -618,7 +622,7 @@ class TransportationService:
     def update_user_transportation(db: Session, user_id: int, transportation_id: int,
                                   category: str = None, departure_time: str = None,
                                   arrival_time: str = None, memo: str = None,
-                                  transportation_date: str = None) -> Optional[Transportation]:
+                                  company: str = None, transportation_date: str = None) -> Optional[Transportation]:
         """특정 사용자의 교통수단 기록을 수정합니다."""
         transportation = db.query(Transportation).filter(
             Transportation.id == transportation_id,
@@ -627,6 +631,8 @@ class TransportationService:
         if transportation:
             if category is not None:
                 transportation.category = category
+            if company is not None:
+                transportation.company = company
             if departure_time is not None:
                 transportation.departure_time = departure_time
             if arrival_time is not None:

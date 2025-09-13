@@ -232,9 +232,7 @@ class AuthService:
             url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
             
             # Message content
-            message = f"""🇯🇵 일본 여행 경비 추적기
-
-🔐 로그인 코드: {code}
+            message = f"""🔐 로그인 코드: {code}
 
 이 코드를 웹사이트에 입력하여 로그인하세요.
 

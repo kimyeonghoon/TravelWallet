@@ -39,7 +39,10 @@
       "Bash(sqlite3:*)",
       "Bash(pkill:*)",
       "Bash(find:*)",
-      "Bash(git cherry-pick:*)"
+      "Bash(git cherry-pick:*)",
+      "Bash(gh auth:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)"
     ],
     "deny": [],
     "ask": []

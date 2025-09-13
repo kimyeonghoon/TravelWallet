@@ -85,7 +85,7 @@
                         <div class="card-body">
                             <form id="transportation-form">
                                 <div class="row">
-                                    <div class="col-md-3 mb-3">
+                                    <div class="col-md-2 mb-3">
                                         <label for="category" class="form-label">교통수단 *</label>
                                         <select class="form-select" id="category" required>
                                             <option value="">선택하세요</option>
@@ -97,14 +97,22 @@
                                         </select>
                                     </div>
                                     <div class="col-md-2 mb-3">
+                                        <label for="company" class="form-label">이용회사</label>
+                                        <input type="text" class="form-control" id="company" placeholder="서일본, 히로덴 등">
+                                    </div>
+                                    <div class="col-md-2 mb-3">
                                         <label for="departure-time" class="form-label">출발시간 *</label>
-                                        <input type="time" class="form-control" id="departure-time" required>
+                                        <select class="form-select" id="departure-time" required>
+                                            <option value="">선택하세요</option>
+                                        </select>
                                     </div>
                                     <div class="col-md-2 mb-3">
                                         <label for="arrival-time" class="form-label">도착시간 *</label>
-                                        <input type="time" class="form-control" id="arrival-time" required>
+                                        <select class="form-select" id="arrival-time" required>
+                                            <option value="">선택하세요</option>
+                                        </select>
                                     </div>
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-3 mb-3">
                                         <label for="memo" class="form-label">메모</label>
                                         <input type="text" class="form-control" id="memo" placeholder="출발지-도착지, 노선명 등">
                                     </div>
@@ -175,25 +183,9 @@
                             <h5><i class="fas fa-list me-2"></i>교통수단 이용 기록</h5>
                             <span class="badge bg-secondary" id="records-count">0건</span>
                         </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>교통수단</th>
-                                            <th>출발시간</th>
-                                            <th>도착시간</th>
-                                            <th>메모</th>
-                                            <th>이용일</th>
-                                            {% if user %}
-                                            <th width="120">관리</th>
-                                            {% endif %}
-                                        </tr>
-                                    </thead>
-                                    <tbody id="transportation-list">
-                                        <!-- Transportation records will be loaded here -->
-                                    </tbody>
-                                </table>
+                        <div class="card-body">
+                            <div id="transportation-list">
+                                <!-- Transportation records will be loaded here -->
                             </div>
                         </div>
                     </div>
@@ -223,27 +215,35 @@
                                     <option value="기타">기타</option>
                                 </select>
                             </div>
+                            <div class="mb-3">
+                                <label for="edit-company" class="form-label">이용회사</label>
+                                <input type="text" class="form-control" id="edit-company" placeholder="서일본, 히로덴 등">
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit-date" class="form-label">이용일</label>
+                                <input type="date" class="form-control" id="edit-date">
+                            </div>
                             <div class="row">
                                 <div class="col-6">
                                     <div class="mb-3">
                                         <label for="edit-departure-time" class="form-label">출발시간 *</label>
-                                        <input type="time" class="form-control" id="edit-departure-time" required>
+                                        <select class="form-select" id="edit-departure-time" required>
+                                            <option value="">선택하세요</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="mb-3">
                                         <label for="edit-arrival-time" class="form-label">도착시간 *</label>
-                                        <input type="time" class="form-control" id="edit-arrival-time" required>
+                                        <select class="form-select" id="edit-arrival-time" required>
+                                            <option value="">선택하세요</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label for="edit-memo" class="form-label">메모</label>
                                 <input type="text" class="form-control" id="edit-memo" placeholder="출발지-도착지, 노선명 등">
-                            </div>
-                            <div class="mb-3">
-                                <label for="edit-date" class="form-label">이용일</label>
-                                <input type="date" class="form-control" id="edit-date">
                             </div>
                         </form>
                     </div>

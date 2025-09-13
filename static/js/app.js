@@ -432,7 +432,14 @@ $(document).ready(function() {
                                 </div>
                                 <div class="mb-3">
                                     <label for="edit-time" class="form-label">시간</label>
-                                    <input type="time" class="form-control" id="edit-time" value="${formatTimeFromTimestamp(expense.timestamp)}">
+                                    <div class="d-flex">
+                                        <select class="form-select me-1" id="edit-time-hour">
+                                            <option value="">시</option>
+                                        </select>
+                                        <select class="form-select ms-1" id="edit-time-minute">
+                                            <option value="">분</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </form>
                         </div>
@@ -457,9 +464,12 @@ $(document).ready(function() {
         
         // Load wallets for edit modal
         loadEditWallets(expense);
-        
+
         // Add payment method change listener for edit modal
         $('#edit-payment-method').on('change', toggleEditWalletSelection);
+
+        // Populate time dropdowns for edit modal
+        populateEditTimeOptions(expense);
         
         // Handle save button click
         $('#save-expense-btn').on('click', function() {
@@ -479,7 +489,11 @@ $(document).ready(function() {
         const paymentMethod = $('#edit-payment-method').val();
         const walletId = $('#edit-wallet-id').val();
         const date = $('#edit-date').val();
-        const time = $('#edit-time').val();
+
+        // 시간과 분을 조합
+        const hour = $('#edit-time-hour').val();
+        const minute = $('#edit-time-minute').val();
+        const time = (hour && minute) ? `${hour}:${minute}` : null;
         
         if (amount) updateData.amount = parseFloat(amount);
         if (category) updateData.category = category;
@@ -893,6 +907,39 @@ $(document).ready(function() {
         } else {
             walletContainer.hide();
             $('#edit-wallet-id').val(''); // Clear selection
+        }
+    }
+
+    /**
+     * 지출 수정 모달의 시간 드롭다운 옵션 생성 및 기존 값 설정
+     */
+    function populateEditTimeOptions(expense) {
+        // 시간 드롭다운 (0-23시)
+        const hourSelect = $('#edit-time-hour');
+        if (hourSelect.length) {
+            for (let hour = 0; hour < 24; hour++) {
+                const hourString = hour.toString().padStart(2, '0');
+                hourSelect.append(`<option value="${hourString}">${hourString}시</option>`);
+            }
+        }
+
+        // 분 드롭다운 (0-59분, 1분 단위)
+        const minuteSelect = $('#edit-time-minute');
+        if (minuteSelect.length) {
+            for (let minute = 0; minute < 60; minute++) {
+                const minuteString = minute.toString().padStart(2, '0');
+                minuteSelect.append(`<option value="${minuteString}">${minuteString}분</option>`);
+            }
+        }
+
+        // 기존 시간 값을 설정
+        if (expense.timestamp) {
+            const timeString = formatTimeFromTimestamp(expense.timestamp);
+            if (timeString) {
+                const [hour, minute] = timeString.split(':');
+                $('#edit-time-hour').val(hour);
+                $('#edit-time-minute').val(minute);
+            }
         }
     }
 });

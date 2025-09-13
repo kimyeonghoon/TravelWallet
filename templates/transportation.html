@@ -139,59 +139,67 @@
             </div>
             {% endif %}
 
-            <!-- Filters -->
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-3 mb-2">
-                                    <select class="form-select" id="filter-category">
-                                        <option value="">모든 교통수단</option>
-                                        <option value="JR">JR</option>
-                                        <option value="전철">전철</option>
-                                        <option value="버스">버스</option>
-                                        <option value="배">배</option>
-                                        <option value="기타">기타</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-2 mb-2">
-                                    <input type="date" class="form-control" id="filter-date-from" placeholder="시작일">
-                                </div>
-                                <div class="col-md-2 mb-2">
-                                    <input type="date" class="form-control" id="filter-date-to" placeholder="종료일">
-                                </div>
-                                <div class="col-md-2 mb-2">
-                                    <select class="form-select" id="sort-by">
-                                        <option value="timestamp">등록일시</option>
-                                        <option value="date">이용일</option>
-                                        <option value="departure_time">출발시간</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-2 mb-2">
-                                    <select class="form-select" id="sort-order">
-                                        <option value="desc">내림차순</option>
-                                        <option value="asc">오름차순</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-1 mb-2">
-                                    <button class="btn btn-outline-primary w-100" id="apply-filters">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Transportation Records List -->
             <div class="row">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5><i class="fas fa-list me-2"></i>교통수단 이용 기록</h5>
-                            <span class="badge bg-secondary" id="records-count">0건</span>
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-list me-2"></i>교통수단 이용 기록</h5>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-secondary" id="records-count">0건</span>
+                                    <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#transportationFilterCollapse">
+                                        <i class="fas fa-filter me-1"></i>필터/정렬
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filter/Sort Controls -->
+                        <div class="collapse" id="transportationFilterCollapse">
+                            <div class="card-body border-bottom">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label for="filter-category" class="form-label">교통수단</label>
+                                        <select class="form-select" id="filter-category">
+                                            <option value="">모든 교통수단</option>
+                                            <option value="JR">JR</option>
+                                            <option value="전철">전철</option>
+                                            <option value="버스">버스</option>
+                                            <option value="배">배</option>
+                                            <option value="기타">기타</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="filter-date-from" class="form-label">시작일</label>
+                                        <input type="date" class="form-control" id="filter-date-from">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="filter-date-to" class="form-label">종료일</label>
+                                        <input type="date" class="form-control" id="filter-date-to">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="sort-by" class="form-label">정렬 기준</label>
+                                        <select class="form-select" id="sort-by">
+                                            <option value="timestamp">등록일시</option>
+                                            <option value="date">이용일</option>
+                                            <option value="departure_time">출발시간</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="sort-order" class="form-label">정렬 순서</label>
+                                        <select class="form-select" id="sort-order">
+                                            <option value="desc">내림차순</option>
+                                            <option value="asc">오름차순</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-1 d-flex align-items-end">
+                                        <button class="btn btn-primary w-100" id="apply-filters">
+                                            <i class="fas fa-search me-1"></i>검색
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div id="transportation-list">

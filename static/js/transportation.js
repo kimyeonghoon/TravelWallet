@@ -44,7 +44,6 @@ $(document).ready(function() {
 
         // 필터 및 정렬 이벤트
         $('#apply-filters').on('click', applyFilters);
-        $('#filter-category, #filter-date-from, #filter-date-to, #sort-by, #sort-order').on('change', applyFilters);
     }
 
     /**
@@ -63,12 +62,12 @@ $(document).ready(function() {
             }
         });
 
-        // 분 드롭다운 (0, 15, 30, 45분)
+        // 분 드롭다운 (0-59분, 1분 단위)
         const minuteSelectors = ['#departure-minute', '#arrival-minute', '#edit-departure-minute', '#edit-arrival-minute'];
         minuteSelectors.forEach(selector => {
             const selectElement = $(selector);
             if (selectElement.length) {
-                for (let minute = 0; minute < 60; minute += 15) {
+                for (let minute = 0; minute < 60; minute++) {
                     const minuteString = minute.toString().padStart(2, '0');
                     selectElement.append(`<option value="${minuteString}">${minuteString}분</option>`);
                 }

@@ -26,8 +26,8 @@ from typing import List, Optional  # 타입 힌팅
 import os
 
 # 자체 모듈 임포트
-from models import create_tables, get_db, User, TransportCard, Wallet  # 데이터베이스 모델
-from database import ExpenseService, TransportCardService, WalletService  # 데이터베이스 서비스
+from models import create_tables, get_db, User, TransportCard, Wallet, Transportation  # 데이터베이스 모델
+from database import ExpenseService, TransportCardService, WalletService, TransportationService  # 데이터베이스 서비스
 from auth import AuthService  # 인증 서비스
 from exchange_service import exchange_service  # 환율 서비스
 
@@ -131,6 +131,34 @@ class WalletResponse(BaseModel):
     created_at: str
     updated_at: str
 
+# ==================== 교통수단 관련 모델 ====================
+
+class TransportationCreate(BaseModel):
+    """교통수단 기록 생성 요청 모델"""
+    category: str  # 교통수단 카테고리 (JR, 전철, 버스, 배, 기타)
+    departure_time: str  # 출발시간 (HH:MM)
+    arrival_time: str  # 도착시간 (HH:MM)
+    memo: str = ""  # 메모 (출발지-도착지, 노선 등)
+
+class TransportationUpdate(BaseModel):
+    """교통수단 기록 수정 요청 모델 (모든 필드 선택사항)"""
+    category: Optional[str] = None
+    departure_time: Optional[str] = None
+    arrival_time: Optional[str] = None
+    memo: Optional[str] = None
+    date: Optional[str] = None
+
+class TransportationResponse(BaseModel):
+    """교통수단 기록 조회 응답 모델"""
+    id: int
+    user_id: Optional[int] = None
+    category: str
+    departure_time: str
+    arrival_time: str
+    memo: str
+    date: str
+    timestamp: str
+
 # Authentication models
 class LoginRequest(BaseModel):
     email: str
@@ -232,6 +260,17 @@ async def transport_cards_page(
 ):
     """Transport cards page accessible to all users."""
     return templates.TemplateResponse("transport-cards.html", {
+        "request": request,
+        "user": current_user
+    })
+
+@app.get("/transportation", response_class=HTMLResponse)
+async def transportation_page(
+    request: Request,
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """Transportation records page accessible to all users."""
+    return templates.TemplateResponse("transportation.html", {
         "request": request,
         "user": current_user
     })
@@ -547,6 +586,88 @@ async def get_wallet_summary(db: Session = Depends(get_db)):
     """Get total balance of all wallets."""
     total_balance = WalletService.get_total_balance(db)
     return {"total_balance": total_balance}
+
+# ==================== 교통수단 API 엔드포인트 ====================
+
+@app.post("/api/transportation", response_model=TransportationResponse)
+async def create_transportation(
+    transportation: TransportationCreate,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Create a new transportation record."""
+    try:
+        new_transportation = TransportationService.create_transportation(
+            db=db,
+            user_id=current_user.id,
+            category=transportation.category,
+            departure_time=transportation.departure_time,
+            arrival_time=transportation.arrival_time,
+            memo=transportation.memo
+        )
+        return TransportationResponse(**new_transportation.to_dict())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/transportation", response_model=List[TransportationResponse])
+async def get_transportation_records(
+    category: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    sort_order: Optional[str] = "desc",
+    db: Session = Depends(get_db)
+):
+    """Get transportation records with optional filters and sorting - public access for viewing."""
+    if any([category, date_from, date_to, sort_by]):
+        # Use filtered query
+        transportations = TransportationService.get_filtered_transportations(
+            db=db,
+            category=category,
+            date_from=date_from,
+            date_to=date_to,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+    else:
+        # Use existing method for backward compatibility
+        transportations = TransportationService.get_all_transportations(db)
+
+    return [TransportationResponse(**transportation.to_dict()) for transportation in transportations]
+
+@app.put("/api/transportation/{transportation_id}", response_model=TransportationResponse)
+async def update_transportation(
+    transportation_id: int,
+    transportation_update: TransportationUpdate,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Update a transportation record."""
+    updated_transportation = TransportationService.update_user_transportation(
+        db=db,
+        user_id=current_user.id,
+        transportation_id=transportation_id,
+        category=transportation_update.category,
+        departure_time=transportation_update.departure_time,
+        arrival_time=transportation_update.arrival_time,
+        memo=transportation_update.memo,
+        transportation_date=transportation_update.date
+    )
+    if not updated_transportation:
+        raise HTTPException(status_code=404, detail="Transportation record not found")
+    return TransportationResponse(**updated_transportation.to_dict())
+
+@app.delete("/api/transportation/{transportation_id}")
+async def delete_transportation(
+    transportation_id: int,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Delete a transportation record."""
+    success = TransportationService.delete_user_transportation(db, current_user.id, transportation_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Transportation record not found")
+    return {"message": "Transportation record deleted successfully"}
 
 # Exchange Rate endpoints
 @app.get("/api/exchange-rate")

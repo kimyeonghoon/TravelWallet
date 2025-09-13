@@ -80,6 +80,7 @@ class User(Base):
     # Relationship to expenses
     expenses = relationship("Expense", back_populates="user")
     login_tokens = relationship("LoginToken", back_populates="user")
+    transportations = relationship("Transportation", back_populates="user")
     
     def to_dict(self):
         return {
@@ -158,16 +159,50 @@ class Wallet(Base):
             "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None
         }
 
+class Transportation(Base):
+    """
+    교통수단 이용 기록 테이블
+    일본 여행 중 이용한 교통수단 정보를 기록
+    """
+    __tablename__ = "transportation"
+
+    # 기본 필드
+    id = Column(Integer, primary_key=True, index=True)  # 교통수단 기록 고유 ID
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 사용자 ID (하위 호환성을 위해 nullable)
+
+    # 교통수단 정보
+    category = Column(String(20), nullable=False)  # 교통수단 카테고리 (JR, 전철, 버스, 배, 기타)
+    departure_time = Column(String(5), nullable=False)  # 출발시간 (HH:MM)
+    arrival_time = Column(String(5), nullable=False)  # 도착시간 (HH:MM)
+    memo = Column(String(200), default="")  # 메모 (출발지-도착지, 노선 등)
+    date = Column(String(10), nullable=False)  # 이용 날짜 (YYYY-MM-DD 형식)
+    timestamp = Column(DateTime, default=now_kst)  # 등록 시간 (한국 시간)
+
+    # 테이블 간 관계 설정
+    user = relationship("User", back_populates="transportations")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "category": self.category,
+            "departure_time": self.departure_time,
+            "arrival_time": self.arrival_time,
+            "memo": self.memo,
+            "date": self.date,
+            "timestamp": self.timestamp.strftime("%Y-%m-%d %H:%M:%S") if self.timestamp else None
+        }
+
 class IPBan(Base):
     __tablename__ = "ip_bans"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     ip_address = Column(String(45), index=True, nullable=False)  # Support IPv6
     failed_attempts = Column(Integer, default=1)
     banned_until = Column(DateTime, nullable=True)
     first_attempt = Column(DateTime, default=now_kst)
     last_attempt = Column(DateTime, default=now_kst)
-    
+
     def is_banned(self):
         """Check if IP is currently banned."""
         if self.banned_until and now_kst() < self.banned_until:

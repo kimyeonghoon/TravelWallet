@@ -15,27 +15,36 @@
 
 # FastAPI 및 관련 라이브러리 임포트
 from fastapi import FastAPI, Request, Depends, HTTPException, Cookie
-import ipaddress
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles  # 정적 파일 서빙
 from fastapi.templating import Jinja2Templates  # HTML 템플릿 렌더링
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials  # JWT 인증
 from sqlalchemy.orm import Session  # 데이터베이스 세션 관리
 from pydantic import BaseModel  # 데이터 검증 모델
 from typing import List, Optional  # 타입 힌팅
+from contextlib import asynccontextmanager  # Lifespan events
 import os
 
 # 자체 모듈 임포트
-from models import create_tables, get_db, User, TransportCard, Wallet, Transportation  # 데이터베이스 모델
+from models import create_tables, get_db, User  # 데이터베이스 모델
 from database import ExpenseService, TransportCardService, WalletService, TransportationService  # 데이터베이스 서비스
 from auth import AuthService  # 인증 서비스
 from exchange_service import exchange_service  # 환율 서비스
 
-# 애플리케이션 시작 시 데이터베이스 테이블 생성
-create_tables()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    create_tables()
+    print("데이터베이스 테이블이 성공적으로 생성되었습니다")
+    yield
+    # Shutdown (if needed)
 
 # FastAPI 애플리케이션 인스턴스 생성
-app = FastAPI(title="Japan Travel Expense Tracker", description="일본 여행 경비 추적 시스템")
+app = FastAPI(
+    title="Japan Travel Expense Tracker",
+    description="일본 여행 경비 추적 시스템",
+    lifespan=lifespan
+)
 
 # CORS 미들웨어 추가 (nginx 프록시 호환성을 위함)
 from fastapi.middleware.cors import CORSMiddleware
@@ -52,13 +61,7 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")  # 정적 파일 
 app.mount("/static", StaticFiles(directory=static_dir, html=True), name="static")  # CSS, JS, 이미지 파일 서빙
 templates = Jinja2Templates(directory="templates")  # HTML 템플릿 디렉토리 설정
 
-# 애플리케이션 시작 이벤트 - 데이터베이스 초기화
-@app.on_event("startup")
-async def startup_event():
-    """애플리케이션 시작 시 데이터베이스 테이블을 생성합니다."""
-    from models import create_tables
-    create_tables()
-    print("데이터베이스 테이블이 성공적으로 생성되었습니다")
+# Lifespan 이벤트로 대체됨 - 위의 lifespan 함수 참조
 
 # ==================== API 요청/응답 모델 정의 (Pydantic) ====================
 
@@ -473,8 +476,8 @@ async def get_statistics(db: Session = Depends(get_db)):
 # Transport Card endpoints
 @app.post("/api/transport-cards", response_model=TransportCardResponse)
 async def create_transport_card(
-    card: TransportCardCreate, 
-    current_user: User = Depends(require_auth), 
+    card: TransportCardCreate,
+    _: User = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Create a new transport card."""
@@ -492,9 +495,9 @@ async def get_transport_cards(db: Session = Depends(get_db)):
 
 @app.put("/api/transport-cards/{card_id}", response_model=TransportCardResponse)
 async def update_transport_card(
-    card_id: int, 
-    card_update: TransportCardUpdate, 
-    current_user: User = Depends(require_auth), 
+    card_id: int,
+    card_update: TransportCardUpdate,
+    _: User = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Update a transport card."""
@@ -507,8 +510,8 @@ async def update_transport_card(
 
 @app.delete("/api/transport-cards/{card_id}")
 async def delete_transport_card(
-    card_id: int, 
-    current_user: User = Depends(require_auth), 
+    card_id: int,
+    _: User = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Delete a transport card."""
@@ -537,8 +540,8 @@ async def wallets_page(
 
 @app.post("/api/wallets", response_model=WalletResponse)
 async def create_wallet(
-    wallet: WalletCreate, 
-    current_user: User = Depends(require_auth), 
+    wallet: WalletCreate,
+    _: User = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Create a new wallet."""
@@ -556,9 +559,9 @@ async def get_wallets(db: Session = Depends(get_db)):
 
 @app.put("/api/wallets/{wallet_id}", response_model=WalletResponse)
 async def update_wallet(
-    wallet_id: int, 
-    wallet_update: WalletUpdate, 
-    current_user: User = Depends(require_auth), 
+    wallet_id: int,
+    wallet_update: WalletUpdate,
+    _: User = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Update a wallet."""
@@ -571,8 +574,8 @@ async def update_wallet(
 
 @app.delete("/api/wallets/{wallet_id}")
 async def delete_wallet(
-    wallet_id: int, 
-    current_user: User = Depends(require_auth), 
+    wallet_id: int,
+    _: User = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Delete a wallet."""

@@ -14,7 +14,7 @@
 # SQLAlchemy 및 관련 라이브러리 임포트
 from sqlalchemy.orm import Session, selectinload  # 데이터베이스 세션 및 관계 로딩
 from sqlalchemy import func  # SQL 함수 (COUNT, SUM 등)
-from models import Expense, TransportCard, Wallet, now_kst  # 데이터베이스 모델 및 한국 시간 함수
+from models import Expense, TransportCard, Wallet, Transportation, now_kst  # 데이터베이스 모델 및 한국 시간 함수
 from datetime import datetime, date  # 날짜/시간 처리
 from typing import List, Optional  # 타입 힌팅
 
@@ -414,7 +414,7 @@ class TransportCardService:
 
 class WalletService:
     """Service class for wallet database operations."""
-    
+
     @staticmethod
     def create_wallet(db: Session, name: str, balance: float = 0.0) -> Wallet:
         """Create a new wallet."""
@@ -428,17 +428,17 @@ class WalletService:
         db.commit()
         db.refresh(wallet)
         return wallet
-    
+
     @staticmethod
     def get_all_wallets(db: Session) -> List[Wallet]:
         """Get all wallets ordered by name."""
         return db.query(Wallet).order_by(Wallet.name).all()
-    
+
     @staticmethod
     def get_wallet(db: Session, wallet_id: int) -> Optional[Wallet]:
         """Get a single wallet by ID."""
         return db.query(Wallet).filter(Wallet.id == wallet_id).first()
-    
+
     @staticmethod
     def update_wallet(db: Session, wallet_id: int, name: str = None, balance: float = None) -> Optional[Wallet]:
         """Update a wallet."""
@@ -449,12 +449,12 @@ class WalletService:
             if balance is not None:
                 wallet.balance = balance
             wallet.updated_at = now_kst()
-            
+
             db.commit()
             db.refresh(wallet)
             return wallet
         return None
-    
+
     @staticmethod
     def delete_wallet(db: Session, wallet_id: int) -> bool:
         """Delete a wallet by ID."""
@@ -464,9 +464,192 @@ class WalletService:
             db.commit()
             return True
         return False
-    
+
     @staticmethod
     def get_total_balance(db: Session) -> float:
         """Get total balance of all wallets."""
         result = db.query(func.sum(Wallet.balance)).scalar()
         return result if result else 0.0
+
+class TransportationService:
+    """
+    교통수단 이용 기록 관리 서비스
+    교통수단 데이터의 생성, 조회, 수정, 삭제 기능을 제공
+    """
+
+    @staticmethod
+    def create_transportation(db: Session, user_id: int, category: str, departure_time: str,
+                             arrival_time: str, memo: str = "") -> Transportation:
+        """
+        새로운 교통수단 이용 기록을 생성합니다.
+
+        Args:
+            db: 데이터베이스 세션
+            user_id: 사용자 ID
+            category: 교통수단 카테고리 (JR, 전철, 버스, 배, 기타)
+            departure_time: 출발시간 (HH:MM)
+            arrival_time: 도착시간 (HH:MM)
+            memo: 메모 (출발지-도착지, 노선 등)
+
+        Returns:
+            생성된 교통수단 기록 객체
+        """
+        transportation = Transportation(
+            user_id=user_id,
+            category=category,
+            departure_time=departure_time,
+            arrival_time=arrival_time,
+            memo=memo,
+            date=date.today().strftime("%Y-%m-%d"),
+            timestamp=now_kst()
+        )
+        db.add(transportation)
+        db.commit()
+        db.refresh(transportation)
+        return transportation
+
+    @staticmethod
+    def get_all_transportations(db: Session) -> List[Transportation]:
+        """모든 교통수단 기록을 시간순으로 조회합니다."""
+        return db.query(Transportation).order_by(Transportation.timestamp.desc()).all()
+
+    @staticmethod
+    def get_transportation(db: Session, transportation_id: int) -> Optional[Transportation]:
+        """특정 ID의 교통수단 기록을 조회합니다."""
+        return db.query(Transportation).filter(Transportation.id == transportation_id).first()
+
+    @staticmethod
+    def update_transportation(db: Session, transportation_id: int, category: str = None,
+                             departure_time: str = None, arrival_time: str = None,
+                             memo: str = None, transportation_date: str = None) -> Optional[Transportation]:
+        """교통수단 기록을 수정합니다."""
+        transportation = db.query(Transportation).filter(Transportation.id == transportation_id).first()
+        if transportation:
+            if category is not None:
+                transportation.category = category
+            if departure_time is not None:
+                transportation.departure_time = departure_time
+            if arrival_time is not None:
+                transportation.arrival_time = arrival_time
+            if memo is not None:
+                transportation.memo = memo
+            if transportation_date is not None:
+                transportation.date = transportation_date
+
+            db.commit()
+            db.refresh(transportation)
+            return transportation
+        return None
+
+    @staticmethod
+    def delete_transportation(db: Session, transportation_id: int) -> bool:
+        """교통수단 기록을 삭제합니다."""
+        transportation = db.query(Transportation).filter(Transportation.id == transportation_id).first()
+        if transportation:
+            db.delete(transportation)
+            db.commit()
+            return True
+        return False
+
+    @staticmethod
+    def get_transportations_by_date(db: Session, target_date: str) -> List[Transportation]:
+        """특정 날짜의 교통수단 기록을 조회합니다."""
+        return db.query(Transportation).filter(Transportation.date == target_date).order_by(Transportation.departure_time).all()
+
+    @staticmethod
+    def get_transportations_by_category(db: Session, category: str) -> List[Transportation]:
+        """특정 카테고리의 교통수단 기록을 조회합니다."""
+        return db.query(Transportation).filter(Transportation.category == category).order_by(Transportation.timestamp.desc()).all()
+
+    @staticmethod
+    def get_filtered_transportations(
+        db: Session,
+        category: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        sort_order: Optional[str] = "desc"
+    ) -> List[Transportation]:
+        """필터와 정렬 조건에 따른 교통수단 기록을 조회합니다."""
+        query = db.query(Transportation)
+
+        # 필터 적용
+        if category:
+            query = query.filter(Transportation.category == category)
+
+        if date_from:
+            query = query.filter(Transportation.date >= date_from)
+
+        if date_to:
+            query = query.filter(Transportation.date <= date_to)
+
+        # 정렬 적용
+        if sort_by == "date":
+            if sort_order == "asc":
+                query = query.order_by(Transportation.date.asc(), Transportation.departure_time.asc())
+            else:
+                query = query.order_by(Transportation.date.desc(), Transportation.departure_time.desc())
+        elif sort_by == "departure_time":
+            if sort_order == "asc":
+                query = query.order_by(Transportation.departure_time.asc())
+            else:
+                query = query.order_by(Transportation.departure_time.desc())
+        else:
+            # 기본 정렬: 최신 등록순
+            query = query.order_by(Transportation.timestamp.desc())
+
+        return query.all()
+
+    # 사용자별 메서드
+    @staticmethod
+    def get_user_transportations(db: Session, user_id: int) -> List[Transportation]:
+        """특정 사용자의 모든 교통수단 기록을 조회합니다."""
+        return db.query(Transportation).filter(Transportation.user_id == user_id).order_by(Transportation.timestamp.desc()).all()
+
+    @staticmethod
+    def get_user_transportation(db: Session, user_id: int, transportation_id: int) -> Optional[Transportation]:
+        """특정 사용자의 특정 교통수단 기록을 조회합니다."""
+        return db.query(Transportation).filter(
+            Transportation.id == transportation_id,
+            Transportation.user_id == user_id
+        ).first()
+
+    @staticmethod
+    def update_user_transportation(db: Session, user_id: int, transportation_id: int,
+                                  category: str = None, departure_time: str = None,
+                                  arrival_time: str = None, memo: str = None,
+                                  transportation_date: str = None) -> Optional[Transportation]:
+        """특정 사용자의 교통수단 기록을 수정합니다."""
+        transportation = db.query(Transportation).filter(
+            Transportation.id == transportation_id,
+            Transportation.user_id == user_id
+        ).first()
+        if transportation:
+            if category is not None:
+                transportation.category = category
+            if departure_time is not None:
+                transportation.departure_time = departure_time
+            if arrival_time is not None:
+                transportation.arrival_time = arrival_time
+            if memo is not None:
+                transportation.memo = memo
+            if transportation_date is not None:
+                transportation.date = transportation_date
+
+            db.commit()
+            db.refresh(transportation)
+            return transportation
+        return None
+
+    @staticmethod
+    def delete_user_transportation(db: Session, user_id: int, transportation_id: int) -> bool:
+        """특정 사용자의 교통수단 기록을 삭제합니다."""
+        transportation = db.query(Transportation).filter(
+            Transportation.id == transportation_id,
+            Transportation.user_id == user_id
+        ).first()
+        if transportation:
+            db.delete(transportation)
+            db.commit()
+            return True
+        return False

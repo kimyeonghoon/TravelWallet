@@ -102,15 +102,25 @@
                                     </div>
                                     <div class="col-md-2 mb-3">
                                         <label for="departure-time" class="form-label">출발시간 *</label>
-                                        <select class="form-select" id="departure-time" required>
-                                            <option value="">선택하세요</option>
-                                        </select>
+                                        <div class="d-flex">
+                                            <select class="form-select me-1" id="departure-hour" required>
+                                                <option value="">시</option>
+                                            </select>
+                                            <select class="form-select ms-1" id="departure-minute" required>
+                                                <option value="">분</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div class="col-md-2 mb-3">
                                         <label for="arrival-time" class="form-label">도착시간 *</label>
-                                        <select class="form-select" id="arrival-time" required>
-                                            <option value="">선택하세요</option>
-                                        </select>
+                                        <div class="d-flex">
+                                            <select class="form-select me-1" id="arrival-hour" required>
+                                                <option value="">시</option>
+                                            </select>
+                                            <select class="form-select ms-1" id="arrival-minute" required>
+                                                <option value="">분</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div class="col-md-3 mb-3">
                                         <label for="memo" class="form-label">메모</label>
@@ -227,17 +237,27 @@
                                 <div class="col-6">
                                     <div class="mb-3">
                                         <label for="edit-departure-time" class="form-label">출발시간 *</label>
-                                        <select class="form-select" id="edit-departure-time" required>
-                                            <option value="">선택하세요</option>
-                                        </select>
+                                        <div class="d-flex">
+                                            <select class="form-select me-1" id="edit-departure-hour" required>
+                                                <option value="">시</option>
+                                            </select>
+                                            <select class="form-select ms-1" id="edit-departure-minute" required>
+                                                <option value="">분</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="mb-3">
                                         <label for="edit-arrival-time" class="form-label">도착시간 *</label>
-                                        <select class="form-select" id="edit-arrival-time" required>
-                                            <option value="">선택하세요</option>
-                                        </select>
+                                        <div class="d-flex">
+                                            <select class="form-select me-1" id="edit-arrival-hour" required>
+                                                <option value="">시</option>
+                                            </select>
+                                            <select class="form-select ms-1" id="edit-arrival-minute" required>
+                                                <option value="">분</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

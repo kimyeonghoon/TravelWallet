@@ -48,20 +48,29 @@ $(document).ready(function() {
     }
 
     /**
-     * 24시간 시간 드롭다운 옵션 생성
+     * 시간과 분 드롭다운 옵션 생성
      */
     function populateTimeOptions() {
-        const timeSelectors = ['#departure-time', '#arrival-time', '#edit-departure-time', '#edit-arrival-time'];
-
-        timeSelectors.forEach(selector => {
+        // 시간 드롭다운 (0-23시)
+        const hourSelectors = ['#departure-hour', '#arrival-hour', '#edit-departure-hour', '#edit-arrival-hour'];
+        hourSelectors.forEach(selector => {
             const selectElement = $(selector);
             if (selectElement.length) {
-                // 기존 옵션 유지 (빈 옵션)
                 for (let hour = 0; hour < 24; hour++) {
-                    for (let minute = 0; minute < 60; minute += 15) { // 15분 간격
-                        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                        selectElement.append(`<option value="${timeString}">${timeString}</option>`);
-                    }
+                    const hourString = hour.toString().padStart(2, '0');
+                    selectElement.append(`<option value="${hourString}">${hourString}시</option>`);
+                }
+            }
+        });
+
+        // 분 드롭다운 (0, 15, 30, 45분)
+        const minuteSelectors = ['#departure-minute', '#arrival-minute', '#edit-departure-minute', '#edit-arrival-minute'];
+        minuteSelectors.forEach(selector => {
+            const selectElement = $(selector);
+            if (selectElement.length) {
+                for (let minute = 0; minute < 60; minute += 15) {
+                    const minuteString = minute.toString().padStart(2, '0');
+                    selectElement.append(`<option value="${minuteString}">${minuteString}분</option>`);
                 }
             }
         });
@@ -195,19 +204,29 @@ $(document).ready(function() {
     function handleTransportationSubmit(e) {
         e.preventDefault();
 
-        const formData = {
-            category: $('#category').val(),
-            company: $('#company').val(),
-            departure_time: $('#departure-time').val(),
-            arrival_time: $('#arrival-time').val(),
-            memo: $('#memo').val()
-        };
+        // 시간 조합
+        const departureHour = $('#departure-hour').val();
+        const departureMinute = $('#departure-minute').val();
+        const arrivalHour = $('#arrival-hour').val();
+        const arrivalMinute = $('#arrival-minute').val();
 
-        // 유효성 검사
-        if (!formData.category || !formData.departure_time || !formData.arrival_time) {
+        // 유효성 검사 - 필수 필드
+        if (!$('#category').val() || !departureHour || !departureMinute || !arrivalHour || !arrivalMinute) {
             showAlert('모든 필수 항목을 입력해주세요.', 'warning');
             return;
         }
+
+        // 시간 문자열 생성
+        const departureTime = `${departureHour}:${departureMinute}`;
+        const arrivalTime = `${arrivalHour}:${arrivalMinute}`;
+
+        const formData = {
+            category: $('#category').val(),
+            company: $('#company').val(),
+            departure_time: departureTime,
+            arrival_time: arrivalTime,
+            memo: $('#memo').val()
+        };
 
         // 시간 유효성 검사
         if (formData.departure_time >= formData.arrival_time) {
@@ -225,6 +244,8 @@ $(document).ready(function() {
             success: function(response) {
                 showAlert('교통수단 기록이 추가되었습니다.', 'success');
                 $('#transportation-form')[0].reset();
+                // 시간 드롭다운 초기화
+                $('#departure-hour, #departure-minute, #arrival-hour, #arrival-minute').val('');
                 loadTransportationRecords();
             },
             error: function(xhr) {
@@ -255,8 +276,15 @@ $(document).ready(function() {
                     $('#edit-transportation-id').val(record.id);
                     $('#edit-category').val(record.category);
                     $('#edit-company').val(record.company);
-                    $('#edit-departure-time').val(record.departure_time);
-                    $('#edit-arrival-time').val(record.arrival_time);
+
+                    // 시간 분리하여 설정
+                    const [depHour, depMinute] = record.departure_time.split(':');
+                    const [arrHour, arrMinute] = record.arrival_time.split(':');
+                    $('#edit-departure-hour').val(depHour);
+                    $('#edit-departure-minute').val(depMinute);
+                    $('#edit-arrival-hour').val(arrHour);
+                    $('#edit-arrival-minute').val(arrMinute);
+
                     $('#edit-memo').val(record.memo);
                     $('#edit-date').val(record.date);
 
@@ -273,11 +301,27 @@ $(document).ready(function() {
      * 교통수단 기록 수정 저장
      */
     function handleTransportationSave() {
+        // 시간 조합
+        const departureHour = $('#edit-departure-hour').val();
+        const departureMinute = $('#edit-departure-minute').val();
+        const arrivalHour = $('#edit-arrival-hour').val();
+        const arrivalMinute = $('#edit-arrival-minute').val();
+
+        // 유효성 검사 - 필수 필드
+        if (!$('#edit-category').val() || !departureHour || !departureMinute || !arrivalHour || !arrivalMinute) {
+            showAlert('모든 필수 항목을 입력해주세요.', 'warning');
+            return;
+        }
+
+        // 시간 문자열 생성
+        const departureTime = `${departureHour}:${departureMinute}`;
+        const arrivalTime = `${arrivalHour}:${arrivalMinute}`;
+
         const updateData = {
             category: $('#edit-category').val(),
             company: $('#edit-company').val(),
-            departure_time: $('#edit-departure-time').val(),
-            arrival_time: $('#edit-arrival-time').val(),
+            departure_time: departureTime,
+            arrival_time: arrivalTime,
             memo: $('#edit-memo').val(),
             date: $('#edit-date').val()
         };

@@ -172,6 +172,7 @@ class Transportation(Base):
 
     # 교통수단 정보
     category = Column(String(20), nullable=False)  # 교통수단 카테고리 (JR, 전철, 버스, 배, 기타)
+    company = Column(String(50), default="")  # 이용회사 (서일본, 히로덴 등)
     departure_time = Column(String(5), nullable=False)  # 출발시간 (HH:MM)
     arrival_time = Column(String(5), nullable=False)  # 도착시간 (HH:MM)
     memo = Column(String(200), default="")  # 메모 (출발지-도착지, 노선 등)
@@ -186,6 +187,7 @@ class Transportation(Base):
             "id": self.id,
             "user_id": self.user_id,
             "category": self.category,
+            "company": self.company,
             "departure_time": self.departure_time,
             "arrival_time": self.arrival_time,
             "memo": self.memo,

@@ -20,7 +20,11 @@ $(document).ready(function() {
     // 환율 관련 데이터
     let exchangeRate = null;  // 현재 JPY-KRW 환율 정보
     let isJpyMode = false;   // 통화 입력 모드 (false = KRW, true = JPY)
-    
+
+    // 여행 관련 데이터
+    let currentTrip = null;  // 현재 선택된 여행
+    let allTrips = [];       // 모든 여행 목록
+
     // ==================== 애플리케이션 초기화 ====================
     
     // 페이지 로드 시 앱 초기화
@@ -28,6 +32,7 @@ $(document).ready(function() {
     
     function initApp() {
         // 핵심 데이터 로딩
+        loadTrips();         // 여행 목록 로딩 (우선)
         loadExpenses();      // 지출 내역 로딩
         updateSummary();     // 요약 정보 업데이트
         loadExchangeRate();  // 환율 정보 로딩
@@ -42,7 +47,15 @@ $(document).ready(function() {
         
         // 인증 관련 이벤트
         $('#logout-btn').on('click', handleLogout);  // 로그아웃
-        
+
+        // 여행 관련 이벤트
+        $('#tripSelect').on('change', handleTripSelection);       // 여행 선택
+        $('#addTripForm').on('submit', handleAddTrip);            // 여행 추가
+        $('#editTripForm').on('submit', handleEditTrip);          // 여행 수정
+        $('#editTripBtn').on('click', showEditTripModal);         // 여행 수정 모달
+        $('#deleteTripBtn').on('click', handleDeleteTrip);        // 여행 삭제
+        $('#setDefaultTripBtn').on('click', handleSetDefaultTrip); // 기본 여행 설정
+
         // Payment method change listener
         $('#payment-method').on('change', toggleWalletSelection);
         
@@ -1138,6 +1151,218 @@ $(document).ready(function() {
         `;
 
         $('body').append(bottomNavHtml);
+    }
+
+    // ==================== 여행 관리 기능 ====================
+
+    /**
+     * 여행 목록을 로드합니다.
+     */
+    function loadTrips() {
+        $.get('/api/trips')
+            .done(function(trips) {
+                allTrips = trips;
+                updateTripSelect(trips);
+
+                // 기본 여행이 있으면 자동 선택
+                const defaultTrip = trips.find(trip => trip.is_default);
+                if (defaultTrip) {
+                    currentTrip = defaultTrip;
+                    $('#tripSelect').val(defaultTrip.id).trigger('change');
+                }
+            })
+            .fail(function() {
+                console.error('여행 목록 로드 실패');
+            });
+    }
+
+    /**
+     * 여행 선택 드롭다운을 업데이트합니다.
+     */
+    function updateTripSelect(trips) {
+        const $select = $('#tripSelect');
+        $select.empty().append('<option value="">여행을 선택해주세요...</option>');
+
+        trips.forEach(trip => {
+            const optionText = `${trip.name} (${trip.start_date} ~ ${trip.end_date})`;
+            $select.append(`<option value="${trip.id}">${optionText}</option>`);
+        });
+    }
+
+    /**
+     * 여행 선택 이벤트 처리
+     */
+    function handleTripSelection() {
+        const tripId = $(this).val();
+
+        if (tripId) {
+            currentTrip = allTrips.find(trip => trip.id == tripId);
+            showTripInfo(currentTrip);
+            enableTripActions(true);
+
+            // 선택된 여행에 따라 지출 내역 새로고침
+            loadExpenses();
+        } else {
+            currentTrip = null;
+            hideTripInfo();
+            enableTripActions(false);
+        }
+    }
+
+    /**
+     * 여행 정보를 표시합니다.
+     */
+    function showTripInfo(trip) {
+        $('#tripDestination').text(trip.destination);
+        $('#tripPeriod').text(`${trip.start_date} ~ ${trip.end_date}`);
+        $('#tripDescription').text(trip.description || '설명 없음');
+        $('#tripInfo').show();
+    }
+
+    /**
+     * 여행 정보를 숨깁니다.
+     */
+    function hideTripInfo() {
+        $('#tripInfo').hide();
+    }
+
+    /**
+     * 여행 관리 버튼 상태를 설정합니다.
+     */
+    function enableTripActions(enabled) {
+        $('#editTripBtn').prop('disabled', !enabled);
+        $('#deleteTripBtn').prop('disabled', !enabled || (currentTrip && currentTrip.is_default));
+    }
+
+    /**
+     * 여행 추가 이벤트 처리
+     */
+    function handleAddTrip(e) {
+        e.preventDefault();
+
+        const tripData = {
+            name: $('#tripName').val(),
+            destination: $('#tripDestination').val(),
+            start_date: $('#tripStartDate').val(),
+            end_date: $('#tripEndDate').val(),
+            description: $('#tripDescription').val()
+        };
+
+        $.post('/api/trips', tripData)
+            .done(function(newTrip) {
+                $('#addTripModal').modal('hide');
+                $('#addTripForm')[0].reset();
+
+                // 여행 목록 새로고침
+                loadTrips();
+
+                showAlert('성공', '여행이 성공적으로 추가되었습니다.', 'success');
+            })
+            .fail(function(xhr) {
+                const error = xhr.responseJSON?.detail || '여행 추가에 실패했습니다.';
+                showAlert('오류', error, 'danger');
+            });
+    }
+
+    /**
+     * 여행 수정 모달 표시
+     */
+    function showEditTripModal() {
+        if (!currentTrip) return;
+
+        $('#editTripId').val(currentTrip.id);
+        $('#editTripName').val(currentTrip.name);
+        $('#editTripDestination').val(currentTrip.destination);
+        $('#editTripStartDate').val(currentTrip.start_date);
+        $('#editTripEndDate').val(currentTrip.end_date);
+        $('#editTripDescription').val(currentTrip.description);
+
+        $('#editTripModal').modal('show');
+    }
+
+    /**
+     * 여행 수정 이벤트 처리
+     */
+    function handleEditTrip(e) {
+        e.preventDefault();
+
+        const tripId = $('#editTripId').val();
+        const tripData = {
+            name: $('#editTripName').val(),
+            destination: $('#editTripDestination').val(),
+            start_date: $('#editTripStartDate').val(),
+            end_date: $('#editTripEndDate').val(),
+            description: $('#editTripDescription').val()
+        };
+
+        $.ajax({
+            url: `/api/trips/${tripId}`,
+            type: 'PUT',
+            data: JSON.stringify(tripData),
+            contentType: 'application/json',
+        })
+        .done(function(updatedTrip) {
+            $('#editTripModal').modal('hide');
+
+            // 여행 목록 새로고침
+            loadTrips();
+
+            showAlert('성공', '여행 정보가 성공적으로 수정되었습니다.', 'success');
+        })
+        .fail(function(xhr) {
+            const error = xhr.responseJSON?.detail || '여행 수정에 실패했습니다.';
+            showAlert('오류', error, 'danger');
+        });
+    }
+
+    /**
+     * 여행 삭제 이벤트 처리
+     */
+    function handleDeleteTrip() {
+        if (!currentTrip || currentTrip.is_default) {
+            showAlert('알림', '기본 여행은 삭제할 수 없습니다.', 'warning');
+            return;
+        }
+
+        if (confirm(`"${currentTrip.name}" 여행을 삭제하시겠습니까?\n\n⚠️ 주의: 이 여행과 관련된 모든 지출 데이터도 함께 삭제됩니다!`)) {
+            $.ajax({
+                url: `/api/trips/${currentTrip.id}`,
+                type: 'DELETE'
+            })
+            .done(function() {
+                // 여행 목록 새로고침
+                loadTrips();
+
+                // 선택 초기화
+                currentTrip = null;
+                $('#tripSelect').val('').trigger('change');
+
+                showAlert('성공', '여행이 성공적으로 삭제되었습니다.', 'success');
+            })
+            .fail(function(xhr) {
+                const error = xhr.responseJSON?.detail || '여행 삭제에 실패했습니다.';
+                showAlert('오류', error, 'danger');
+            });
+        }
+    }
+
+    /**
+     * 기본 여행 설정 이벤트 처리
+     */
+    function handleSetDefaultTrip() {
+        if (!currentTrip) return;
+
+        $.post(`/api/trips/${currentTrip.id}/set-default`)
+            .done(function() {
+                // 여행 목록 새로고침
+                loadTrips();
+
+                showAlert('성공', `"${currentTrip.name}"이 기본 여행으로 설정되었습니다.`, 'success');
+            })
+            .fail(function(xhr) {
+                const error = xhr.responseJSON?.detail || '기본 여행 설정에 실패했습니다.';
+                showAlert('오류', error, 'danger');
+            });
     }
 
     // 모바일 최적화 기능 초기화

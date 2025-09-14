@@ -402,6 +402,27 @@ body {
     }
 }
 
+/* Pull to refresh 스타일 */
+.pull-ready {
+    background: linear-gradient(to bottom, #e3f2fd 0%, transparent 100%);
+    transition: background 0.3s ease;
+}
+
+/* 성능 최적화 - 하드웨어 가속 */
+.card, .btn, .expense-item, .bottom-nav-item {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* 애니메이션 최적화 */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
 /* 모바일 하단 네비게이션 */
 .bottom-nav {
     display: none;

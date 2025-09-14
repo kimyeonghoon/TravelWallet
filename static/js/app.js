@@ -51,12 +51,16 @@ $(document).ready(function() {
         // 여행 관련 이벤트
         $('#tripSelect').on('change', handleTripSelection);       // 여행 선택
 
-        // 여행 추가 폼 이벤트 바인딩 (디버그 로그 포함)
-        console.log('Binding addTripForm submit event...');
-        $('#addTripForm').on('submit', handleAddTrip);            // 여행 추가
-        console.log('addTripForm element found:', $('#addTripForm').length);
+        // 여행 추가 폼 이벤트 바인딩 (이벤트 위임 사용)
+        console.log('Binding addTripForm submit event with delegation...');
+        $(document).on('submit', '#addTripForm', handleAddTrip);  // 여행 추가 (이벤트 위임)
 
-        $('#editTripForm').on('submit', handleEditTrip);          // 여행 수정
+        // DOM 로드 완료 후 폼 요소 확인
+        setTimeout(() => {
+            console.log('addTripForm element found after timeout:', $('#addTripForm').length);
+        }, 1000);
+
+        $(document).on('submit', '#editTripForm', handleEditTrip); // 여행 수정 (이벤트 위임)
         $('#editTripBtn').on('click', showEditTripModal);         // 여행 수정 모달
         $('#deleteTripBtn').on('click', handleDeleteTrip);        // 여행 삭제
         $('#setDefaultTripBtn').on('click', handleSetDefaultTrip); // 기본 여행 설정

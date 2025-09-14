@@ -30,12 +30,50 @@ from models import create_tables, get_db, User  # 데이터베이스 모델
 from database import TripService, ExpenseService, TransportCardService, WalletService, TransportationService  # 데이터베이스 서비스
 from auth import AuthService  # 인증 서비스
 from exchange_service import exchange_service  # 환율 서비스
+from models import engine, Expense  # 마이그레이션을 위한 모델 임포트
+
+def migrate_existing_expenses_to_default_trip(db: Session):
+    """
+    기존 trip_id가 None인 지출들을 기본 여행으로 마이그레이션
+    """
+    try:
+        # 기본 여행 생성 또는 가져오기
+        default_trip = TripService.create_default_trip_if_not_exists(db)
+
+        # trip_id가 None인 지출들 조회
+        expenses_without_trip = db.query(Expense).filter(Expense.trip_id.is_(None)).all()
+
+        if expenses_without_trip:
+            print(f"기존 {len(expenses_without_trip)}건의 지출을 기본 여행({default_trip.name})으로 마이그레이션 중...")
+
+            # 모든 지출의 trip_id를 기본 여행 ID로 업데이트
+            for expense in expenses_without_trip:
+                expense.trip_id = default_trip.id
+
+            db.commit()
+            print(f"마이그레이션 완료: {len(expenses_without_trip)}건의 지출이 '기본 여행'으로 이동되었습니다")
+        else:
+            print("마이그레이션할 지출 데이터가 없습니다")
+
+    except Exception as e:
+        print(f"마이그레이션 오류: {str(e)}")
+        db.rollback()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     create_tables()
     print("데이터베이스 테이블이 성공적으로 생성되었습니다")
+
+    # 기존 지출 데이터를 기본 여행으로 마이그레이션
+    from sqlalchemy.orm import sessionmaker
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    db = SessionLocal()
+    try:
+        migrate_existing_expenses_to_default_trip(db)
+    finally:
+        db.close()
+
     yield
     # Shutdown (if needed)
 

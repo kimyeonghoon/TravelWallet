@@ -218,14 +218,121 @@ $(document).ready(function() {
             renderCalendar();
         });
 
-        // 달력 셀 클릭 이벤트 (향후 확장 가능)
+        // 달력 셀 클릭 이벤트 - 지출 내역 모달 표시
         $(document).off('click', '.calendar-day').on('click', '.calendar-day', function() {
             const date = $(this).data('date');
-            if (expenseData[date]) {
-                // 해당 날짜의 지출 상세 정보 표시 (향후 구현)
-                console.log(`${date}: ₩${expenseData[date].toLocaleString()}`);
+            const hasExpense = expenseData[date];
+
+            if (hasExpense && $(this).hasClass('has-expense')) {
+                showExpenseDetailModal(date);
             }
         });
+    }
+
+    function showExpenseDetailModal(date) {
+        const formattedDate = new Date(date).toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        $('#modalDateTitle').text(`${formattedDate} 지출 내역`);
+        $('#modalExpenseList').html('<div class="text-center"><div class="spinner-border" role="status"></div><p class="mt-2">로딩 중...</p></div>');
+        $('#modalTotalAmount').text('₩0');
+
+        // 모달 표시
+        const modal = new bootstrap.Modal(document.getElementById('expenseDetailModal'));
+        modal.show();
+
+        // API 호출로 해당 날짜의 지출 내역 조회
+        $.ajax({
+            url: `/api/expenses/by-date/${date}`,
+            method: 'GET',
+            success: function(expenses) {
+                displayExpenseDetails(expenses);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading expense details:', error);
+                $('#modalExpenseList').html(`
+                    <div class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                        <p>지출 내역을 불러올 수 없습니다.</p>
+                    </div>
+                `);
+            }
+        });
+    }
+
+    function displayExpenseDetails(expenses) {
+        if (!expenses || expenses.length === 0) {
+            $('#modalExpenseList').html(`
+                <div class="text-center text-muted">
+                    <i class="fas fa-receipt fa-3x mb-3"></i>
+                    <p>해당 날짜에 지출 내역이 없습니다.</p>
+                </div>
+            `);
+            return;
+        }
+
+        let totalAmount = 0;
+        let html = '<div class="expense-detail-list">';
+
+        expenses.forEach(expense => {
+            totalAmount += expense.amount;
+
+            const categoryNames = {
+                'food': '식비',
+                'transport': '교통비',
+                'accommodation': '숙박비',
+                'admission': '입장료',
+                'other': '기타'
+            };
+
+            const paymentNames = {
+                'cash': '현금',
+                'debit_card': '체크카드',
+                'credit_card': '신용카드',
+                'transport_card': '교통카드'
+            };
+
+            const categoryIcon = {
+                'food': 'fa-utensils',
+                'transport': 'fa-bus',
+                'accommodation': 'fa-bed',
+                'admission': 'fa-ticket-alt',
+                'other': 'fa-shopping-bag'
+            };
+
+            html += `
+                <div class="expense-detail-item mb-3 p-3 border rounded">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="expense-icon">
+                                <i class="fas ${categoryIcon[expense.category] || 'fa-receipt'} fa-2x text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="expense-info">
+                                <h6 class="mb-1">${expense.description}</h6>
+                                <div class="text-muted small">
+                                    <span class="badge bg-secondary me-2">${categoryNames[expense.category] || expense.category}</span>
+                                    <span class="badge bg-outline-secondary">${paymentNames[expense.payment_method] || expense.payment_method}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="expense-amount">
+                                <span class="h5 mb-0 text-danger">₩${expense.amount.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        $('#modalExpenseList').html(html);
+        $('#modalTotalAmount').text(`₩${totalAmount.toLocaleString()}`);
     }
     
     function populateTopExpenses(topExpenses) {

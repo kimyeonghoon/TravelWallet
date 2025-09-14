@@ -40,7 +40,6 @@ $(document).ready(function() {
         createCategoryChart(data.category_stats);
         createPaymentChart(data.payment_method_stats);
         createExpenseCalendar(data.daily_stats);
-        createWeeklyChart(data.weekly_stats);
     }
     
     function createCategoryChart(categoryStats) {
@@ -225,58 +224,6 @@ $(document).ready(function() {
             if (expenseData[date]) {
                 // 해당 날짜의 지출 상세 정보 표시 (향후 구현)
                 console.log(`${date}: ₩${expenseData[date].toLocaleString()}`);
-            }
-        });
-    }
-    
-    function createWeeklyChart(weeklyStats) {
-        const ctx = document.getElementById('weeklyChart').getContext('2d');
-        
-        // Order by day of week
-        const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
-        
-        const orderedData = dayOrder.map(day => weeklyStats[day] || 0);
-        
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: dayNames,
-                datasets: [{
-                    label: '요일별 지출',
-                    data: orderedData,
-                    backgroundColor: [
-                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
-                        '#9966FF', '#FF9F40', '#FF6384'
-                    ],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '₩' + value.toLocaleString();
-                            }
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `지출: ₩${context.parsed.y.toLocaleString()}`;
-                            }
-                        }
-                    }
-                }
             }
         });
     }

@@ -5,6 +5,7 @@
 
 주요 테이블:
 - users: 사용자 정보 (텔레그램 인증)
+- trips: 여행 정보 (여행명, 기간 등)
 - expenses: 지출 내역
 - transport_cards: 교통카드 정보
 - wallets: 엔화 지갑 정보
@@ -28,6 +29,42 @@ def now_kst():
 # SQLAlchemy 모델 베이스 클래스
 Base = declarative_base()
 
+class Trip(Base):
+    """
+    여행 정보 테이블
+    개별 여행의 기본 정보를 관리
+    """
+    __tablename__ = "trips"
+
+    # 기본 필드
+    id = Column(Integer, primary_key=True, index=True)  # 여행 고유 ID
+
+    # 여행 정보
+    name = Column(String(100), nullable=False)  # 여행 이름 (예: "2025년 일본 여행")
+    destination = Column(String(100), nullable=False)  # 여행지 (예: "일본")
+    start_date = Column(String(10), nullable=False)  # 시작일 (YYYY-MM-DD 형식)
+    end_date = Column(String(10), nullable=False)  # 종료일 (YYYY-MM-DD 형식)
+    description = Column(String(500), default="")  # 여행 설명
+    is_default = Column(Boolean, default=False)  # 기본 여행 여부
+    created_at = Column(DateTime, default=now_kst)  # 생성 시간
+    updated_at = Column(DateTime, default=now_kst, onupdate=now_kst)  # 수정 시간
+
+    # 테이블 간 관계 설정
+    expenses = relationship("Expense", back_populates="trip")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "destination": self.destination,
+            "start_date": self.start_date,
+            "end_date": self.end_date,
+            "description": self.description,
+            "is_default": self.is_default,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None
+        }
+
 class Expense(Base):
     """
     지출 내역 테이블
@@ -38,6 +75,7 @@ class Expense(Base):
     # 기본 필드
     id = Column(Integer, primary_key=True, index=True)  # 지출 고유 ID
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 사용자 ID (하위 호환성을 위해 nullable)
+    trip_id = Column(Integer, ForeignKey("trips.id"), nullable=True)  # 여행 ID (하위 호환성을 위해 nullable)
     wallet_id = Column(Integer, ForeignKey("wallets.id"), nullable=True)  # 현금 결제 시 사용한 지갑 ID (선택사항)
     
     # 지출 정보
@@ -50,12 +88,15 @@ class Expense(Base):
     
     # 테이블 간 관계 설정
     user = relationship("User", back_populates="expenses")
+    trip = relationship("Trip", back_populates="expenses")
     wallet = relationship("Wallet", back_populates="expenses")
     
     def to_dict(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
+            "trip_id": self.trip_id,
+            "trip_name": self.trip.name if self.trip else None,
             "wallet_id": self.wallet_id,
             "wallet_name": self.wallet.name if self.wallet else None,
             "amount": self.amount,

@@ -8,7 +8,17 @@
       "Bash(python:*)",
       "Bash(curl:*)",
       "Bash(sqlite3:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(git remote add:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git remote:*)",
+      "Read(//home/kim-yeonghoon/workspace/**)",
+      "Bash(docker-compose:*)",
+      "Bash(docker compose:*)",
+      "Bash(lsof:*)",
+      "Bash(journalctl:*)",
+      "Bash(kill:*)",
+      "WebFetch(domain:japan.yeonghoon.kim)"
     ],
     "deny": [],
     "ask": []

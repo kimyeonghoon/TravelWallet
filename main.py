@@ -27,7 +27,7 @@ import os
 
 # 자체 모듈 임포트
 from models import create_tables, get_db, User  # 데이터베이스 모델
-from database import ExpenseService, TransportCardService, WalletService, TransportationService  # 데이터베이스 서비스
+from database import TripService, ExpenseService, TransportCardService, WalletService, TransportationService  # 데이터베이스 서비스
 from auth import AuthService  # 인증 서비스
 from exchange_service import exchange_service  # 환율 서비스
 
@@ -65,6 +65,38 @@ templates = Jinja2Templates(directory="templates")  # HTML 템플릿 디렉토�
 
 # ==================== API 요청/응답 모델 정의 (Pydantic) ====================
 
+# ==================== 여행 관련 모델 ====================
+
+class TripCreate(BaseModel):
+    """여행 생성 요청 모델"""
+    name: str  # 여행 이름
+    destination: str  # 여행지
+    start_date: str  # 시작일 (YYYY-MM-DD 형식)
+    end_date: str  # 종료일 (YYYY-MM-DD 형식)
+    description: str = ""  # 여행 설명 (선택사항)
+
+class TripUpdate(BaseModel):
+    """여행 수정 요청 모델 (모든 필드 선택사항)"""
+    name: Optional[str] = None  # 수정할 여행 이름
+    destination: Optional[str] = None  # 수정할 여행지
+    start_date: Optional[str] = None  # 수정할 시작일
+    end_date: Optional[str] = None  # 수정할 종료일
+    description: Optional[str] = None  # 수정할 여행 설명
+
+class TripResponse(BaseModel):
+    """여행 조회 응답 모델"""
+    id: int  # 여행 고유 ID
+    name: str  # 여행 이름
+    destination: str  # 여행지
+    start_date: str  # 시작일
+    end_date: str  # 종료일
+    description: str  # 여행 설명
+    is_default: bool  # 기본 여행 여부
+    created_at: str  # 생성 시간
+    updated_at: str  # 수정 시간
+
+# ==================== 지출 관련 모델 ====================
+
 class ExpenseCreate(BaseModel):
     """지출 생성 요청 모델"""
     amount: float  # 지출 금액
@@ -72,6 +104,7 @@ class ExpenseCreate(BaseModel):
     description: str = ""  # 지출 설명 (선택사항)
     payment_method: str = "현금"  # 결제 수단 (현금, 체크카드, 신용카드, 교통카드)
     wallet_id: Optional[int] = None  # 지갑 ID (현금 결제 시 선택사항)
+    trip_id: Optional[int] = None  # 여행 ID (여행별 지출 분류)
 
 class ExpenseResponse(BaseModel):
     """지출 조회 응답 모델"""
@@ -386,18 +419,108 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
         is_active=current_user.is_active
     )
 
+# ==================== 여행 관리 API ====================
+
+@app.post("/api/trips", response_model=TripResponse)
+async def create_trip(trip: TripCreate, current_user: User = Depends(require_auth), db: Session = Depends(get_db)):
+    """새로운 여행을 생성합니다."""
+    try:
+        new_trip = TripService.create_trip(
+            db=db,
+            name=trip.name,
+            destination=trip.destination,
+            start_date=trip.start_date,
+            end_date=trip.end_date,
+            description=trip.description
+        )
+        return TripResponse(**new_trip.to_dict())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/trips", response_model=List[TripResponse])
+async def get_trips(db: Session = Depends(get_db)):
+    """모든 여행 목록을 조회합니다."""
+    try:
+        trips = TripService.get_all_trips(db)
+        return [TripResponse(**trip.to_dict()) for trip in trips]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/trips/{trip_id}", response_model=TripResponse)
+async def get_trip(trip_id: int, db: Session = Depends(get_db)):
+    """특정 여행 정보를 조회합니다."""
+    try:
+        trip = TripService.get_trip_by_id(db, trip_id)
+        if not trip:
+            raise HTTPException(status_code=404, detail="Trip not found")
+        return TripResponse(**trip.to_dict())
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/trips/{trip_id}", response_model=TripResponse)
+async def update_trip(trip_id: int, trip_update: TripUpdate, current_user: User = Depends(require_auth), db: Session = Depends(get_db)):
+    """여행 정보를 수정합니다."""
+    try:
+        updated_trip = TripService.update_trip(
+            db=db,
+            trip_id=trip_id,
+            name=trip_update.name,
+            destination=trip_update.destination,
+            start_date=trip_update.start_date,
+            end_date=trip_update.end_date,
+            description=trip_update.description
+        )
+        if not updated_trip:
+            raise HTTPException(status_code=404, detail="Trip not found")
+        return TripResponse(**updated_trip.to_dict())
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/trips/{trip_id}")
+async def delete_trip(trip_id: int, current_user: User = Depends(require_auth), db: Session = Depends(get_db)):
+    """여행을 삭제합니다."""
+    try:
+        success = TripService.delete_trip(db, trip_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Trip not found or cannot delete default trip")
+        return {"message": "Trip deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/trips/{trip_id}/set-default")
+async def set_default_trip(trip_id: int, current_user: User = Depends(require_auth), db: Session = Depends(get_db)):
+    """기본 여행을 설정합니다."""
+    try:
+        success = TripService.set_default_trip(db, trip_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Trip not found")
+        return {"message": "Default trip set successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== 지출 관리 API ====================
+
 @app.post("/api/expenses", response_model=ExpenseResponse)
 async def create_expense(expense: ExpenseCreate, current_user: User = Depends(require_auth), db: Session = Depends(get_db)):
     """Create a new expense."""
     try:
         new_expense = ExpenseService.create_expense(
-            db=db, 
+            db=db,
             user_id=current_user.id,
-            amount=expense.amount, 
-            category=expense.category, 
+            amount=expense.amount,
+            category=expense.category,
             description=expense.description,
             payment_method=expense.payment_method,
-            wallet_id=expense.wallet_id
+            wallet_id=expense.wallet_id,
+            trip_id=expense.trip_id
         )
         return ExpenseResponse(**new_expense.to_dict())
     except Exception as e:

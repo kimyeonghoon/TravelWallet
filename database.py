@@ -6,17 +6,194 @@
 비즈니스 로직과 데이터 액세스 로직을 포함합니다.
 
 주요 서비스:
+- TripService: 여행 정보 관리
 - ExpenseService: 지출 내역 관리
-- TransportCardService: 교통카드 관리  
+- TransportCardService: 교통카드 관리
 - WalletService: 엔화 지갑 관리
 """
 
 # SQLAlchemy 및 관련 라이브러리 임포트
 from sqlalchemy.orm import Session, selectinload  # 데이터베이스 세션 및 관계 로딩
 from sqlalchemy import func  # SQL 함수 (COUNT, SUM 등)
-from models import Expense, TransportCard, Wallet, Transportation, now_kst  # 데이터베이스 모델 및 한국 시간 함수
+from models import Trip, Expense, TransportCard, Wallet, Transportation, now_kst  # 데이터베이스 모델 및 한국 시간 함수
 from datetime import datetime, date  # 날짜/시간 처리
 from typing import List, Optional  # 타입 힌팅
+
+class TripService:
+    """
+    여행 정보 관리 서비스
+    여행 데이터의 생성, 조회, 수정, 삭제 기능을 제공
+    """
+
+    @staticmethod
+    def create_trip(db: Session, name: str, destination: str, start_date: str, end_date: str, description: str = "") -> Trip:
+        """
+        새로운 여행을 생성합니다.
+
+        Args:
+            db: 데이터베이스 세션
+            name: 여행 이름
+            destination: 여행지
+            start_date: 시작일 (YYYY-MM-DD)
+            end_date: 종료일 (YYYY-MM-DD)
+            description: 여행 설명
+
+        Returns:
+            생성된 여행 객체
+        """
+        trip = Trip(
+            name=name,
+            destination=destination,
+            start_date=start_date,
+            end_date=end_date,
+            description=description
+        )
+        db.add(trip)
+        db.commit()
+        db.refresh(trip)
+        return trip
+
+    @staticmethod
+    def get_all_trips(db: Session) -> List[Trip]:
+        """
+        모든 여행 목록을 조회합니다.
+
+        Args:
+            db: 데이터베이스 세션
+
+        Returns:
+            여행 목록 (생성일 역순)
+        """
+        return db.query(Trip).order_by(Trip.created_at.desc()).all()
+
+    @staticmethod
+    def get_trip_by_id(db: Session, trip_id: int) -> Optional[Trip]:
+        """
+        ID로 특정 여행을 조회합니다.
+
+        Args:
+            db: 데이터베이스 세션
+            trip_id: 여행 ID
+
+        Returns:
+            여행 객체 또는 None
+        """
+        return db.query(Trip).filter(Trip.id == trip_id).first()
+
+    @staticmethod
+    def get_default_trip(db: Session) -> Optional[Trip]:
+        """
+        기본 여행을 조회합니다.
+
+        Args:
+            db: 데이터베이스 세션
+
+        Returns:
+            기본 여행 객체 또는 None
+        """
+        return db.query(Trip).filter(Trip.is_default == True).first()
+
+    @staticmethod
+    def set_default_trip(db: Session, trip_id: int) -> bool:
+        """
+        기본 여행을 설정합니다.
+
+        Args:
+            db: 데이터베이스 세션
+            trip_id: 기본으로 설정할 여행 ID
+
+        Returns:
+            성공 여부
+        """
+        # 모든 여행의 is_default를 False로 설정
+        db.query(Trip).update({Trip.is_default: False})
+
+        # 지정된 여행을 기본으로 설정
+        trip = db.query(Trip).filter(Trip.id == trip_id).first()
+        if trip:
+            trip.is_default = True
+            db.commit()
+            return True
+        return False
+
+    @staticmethod
+    def update_trip(db: Session, trip_id: int, name: str = None, destination: str = None, start_date: str = None, end_date: str = None, description: str = None) -> Optional[Trip]:
+        """
+        여행 정보를 수정합니다.
+
+        Args:
+            db: 데이터베이스 세션
+            trip_id: 여행 ID
+            name: 여행 이름
+            destination: 여행지
+            start_date: 시작일
+            end_date: 종료일
+            description: 여행 설명
+
+        Returns:
+            수정된 여행 객체 또는 None
+        """
+        trip = db.query(Trip).filter(Trip.id == trip_id).first()
+        if trip:
+            if name is not None:
+                trip.name = name
+            if destination is not None:
+                trip.destination = destination
+            if start_date is not None:
+                trip.start_date = start_date
+            if end_date is not None:
+                trip.end_date = end_date
+            if description is not None:
+                trip.description = description
+            db.commit()
+            db.refresh(trip)
+        return trip
+
+    @staticmethod
+    def delete_trip(db: Session, trip_id: int) -> bool:
+        """
+        여행을 삭제합니다. (주의: 관련 지출도 함께 삭제됨)
+
+        Args:
+            db: 데이터베이스 세션
+            trip_id: 여행 ID
+
+        Returns:
+            삭제 성공 여부
+        """
+        trip = db.query(Trip).filter(Trip.id == trip_id).first()
+        if trip and not trip.is_default:  # 기본 여행은 삭제 불가
+            db.delete(trip)
+            db.commit()
+            return True
+        return False
+
+    @staticmethod
+    def create_default_trip_if_not_exists(db: Session) -> Trip:
+        """
+        기본 여행이 없으면 생성합니다.
+
+        Args:
+            db: 데이터베이스 세션
+
+        Returns:
+            기본 여행 객체
+        """
+        default_trip = TripService.get_default_trip(db)
+        if not default_trip:
+            # 기본 여행 생성
+            default_trip = Trip(
+                name="기본 여행",
+                destination="일본",
+                start_date="2025-01-01",
+                end_date="2025-12-31",
+                description="기본 여행 (기존 데이터)",
+                is_default=True
+            )
+            db.add(default_trip)
+            db.commit()
+            db.refresh(default_trip)
+        return default_trip
 
 class ExpenseService:
     """
@@ -25,10 +202,10 @@ class ExpenseService:
     """
     
     @staticmethod
-    def create_expense(db: Session, user_id: int, amount: float, category: str, description: str = "", payment_method: str = "현금", wallet_id: int = None) -> Expense:
+    def create_expense(db: Session, user_id: int, amount: float, category: str, description: str = "", payment_method: str = "현금", wallet_id: int = None, trip_id: int = None) -> Expense:
         """
         새로운 지출 내역을 생성합니다.
-        
+
         Args:
             db: 데이터베이스 세션
             user_id: 사용자 ID
@@ -37,12 +214,19 @@ class ExpenseService:
             description: 지출 설명
             payment_method: 결제 수단
             wallet_id: 지갑 ID (현금 결제 시 선택사항)
-            
+            trip_id: 여행 ID (여행별 지출 분류)
+
         Returns:
             생성된 지출 객체
         """
+        # trip_id가 없으면 기본 여행 사용
+        if trip_id is None:
+            default_trip = TripService.create_default_trip_if_not_exists(db)
+            trip_id = default_trip.id
+
         expense = Expense(
             user_id=user_id,
+            trip_id=trip_id,
             wallet_id=wallet_id,
             amount=amount,
             category=category,

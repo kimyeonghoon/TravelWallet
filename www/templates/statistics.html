@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통계 - 일본 여행 경비 추적기</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+    <!-- Custom CSS -->
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid px-0">
+        <!-- Header -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="/">
+                    <i class="fas fa-yen-sign me-2"></i>일본 여행 경비
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/"><i class="fas fa-home me-1"></i>홈</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/statistics"><i class="fas fa-chart-bar me-1"></i>통계</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/transport-cards"><i class="fas fa-subway me-1"></i>교통카드</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/transportation"><i class="fas fa-train me-1"></i>교통수단</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/wallets"><i class="fas fa-wallet me-1"></i>엔화지갑</a>
+                        </li>
+                        {% if user %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="logout-btn">
+                                <i class="fas fa-sign-out-alt me-1"></i>로그아웃
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-12 col-lg-8">
+                    <h2><i class="fas fa-chart-bar me-2"></i>지출 통계 대시보드</h2>
+                    <p class="text-muted">여행 경비 데이터를 시각적으로 분석해보세요.</p>
+                </div>
+                <div class="col-12 col-lg-4">
+                    <div class="d-flex justify-content-end mb-3">
+                        <div class="dropdown">
+                            <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-download me-2"></i>데이터 내보내기
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <button class="dropdown-item" onclick="exportData('csv')">
+                                        <i class="fas fa-file-csv me-2"></i>CSV 파일
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item" onclick="exportData('excel')">
+                                        <i class="fas fa-file-excel me-2"></i>Excel 파일
+                                    </button>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#exportFilterModal">
+                                        <i class="fas fa-filter me-2"></i>필터 설정하여 내보내기
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">로딩 중...</span>
+                </div>
+                <p class="mt-2">통계 데이터를 불러오는 중...</p>
+            </div>
+
+            <!-- Statistics Content -->
+            <div id="statistics-content" style="display: none;">
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-12 col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">총 지출</h5>
+                                <h3 id="total-amount">₩0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-success">지출 건수</h5>
+                                <h3 id="expense-count">0건</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-info">일평균 지출</h5>
+                                <h3 id="avg-daily">₩0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-warning">지출 일수</h5>
+                                <h3 id="total-days">0일</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 1 -->
+                <div class="row mb-4">
+                    <div class="col-12 col-lg-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-pie me-2"></i>카테고리별 지출</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="categoryChart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-credit-card me-2"></i>결제수단별 지출</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="paymentChart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2 -->
+                <div class="row mb-4">
+                    <div class="col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5><i class="fas fa-calendar-alt me-2"></i>일별 지출 내역</h5>
+                                <div class="d-flex align-items-center">
+                                    <button class="btn btn-outline-secondary btn-sm me-2" id="prevMonth">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <span id="currentMonth" class="fw-bold">2024년 1월</span>
+                                    <button class="btn btn-outline-secondary btn-sm ms-2" id="nextMonth">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="calendarContainer" class="expense-calendar">
+                                    <!-- 달력이 여기에 동적으로 생성됩니다 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 3 -->
+                <div class="row mb-4">
+                    <div class="col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-trophy me-2"></i>최대 지출 TOP 5</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="top-expenses-list">
+                                    <!-- Top expenses will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fab fa-telegram-plane me-2"></i>텔레그램 로그인
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="login-alerts"></div>
+                    
+                    <!-- Step 1: Request Code -->
+                    <div id="login-step1">
+                        <div class="text-center mb-3">
+                            <i class="fab fa-telegram-plane" style="font-size: 3rem; color: #0088cc;"></i>
+                            <p class="mt-2 text-muted">이메일을 입력하여 텔레그램으로 로그인하세요</p>
+                        </div>
+                        
+                        <form id="email-form">
+                            <div class="mb-3">
+                                <label for="login-email" class="form-label">이메일 주소</label>
+                                <input type="email" class="form-control" id="login-email" 
+                                       placeholder="이메일 주소를 입력하세요" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100" id="request-login-btn">
+                                <i class="fas fa-paper-plane me-2"></i>
+                                <span id="request-btn-text">로그인 코드 받기</span>
+                            </button>
+                        </form>
+                        
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <small><strong>보안 알림:</strong> 여러 번 실패 시 일정 시간 접속이 제한됩니다.</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: Enter Code -->
+                    <div id="login-step2" style="display: none;">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-mobile-alt" style="font-size: 2rem; color: #0088cc;"></i>
+                            <h6 class="mt-2">코드를 입력하세요</h6>
+                            <p class="text-muted">텔레그램으로 전송된 6자리 코드를 입력하세요</p>
+                        </div>
+                        
+                        <form id="login-code-form">
+                            <div class="mb-3">
+                                <input type="text" class="form-control text-center" id="login-code" 
+                                       placeholder="000000" maxlength="6" required pattern="[0-9]{6}"
+                                       style="font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: 600;">
+                                <div class="form-text text-center">
+                                    <i class="fas fa-clock me-1"></i>코드는 15분 후 만료됩니다
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                <span id="verify-btn-text">로그인</span>
+                            </button>
+                            
+                            <button type="button" class="btn btn-link w-100 mt-2" id="back-to-step1">
+                                <i class="fas fa-arrow-left me-1"></i>다시 코드 요청
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Filter Modal -->
+    <div class="modal fade" id="exportFilterModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-filter me-2"></i>내보내기 필터 설정
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="export-alerts"></div>
+                    
+                    <form id="export-filter-form">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="export-category" class="form-label">카테고리</label>
+                                <select class="form-select" id="export-category">
+                                    <option value="">전체</option>
+                                    <option value="식비">식비</option>
+                                    <option value="교통비">교통비</option>
+                                    <option value="숙박비">숙박비</option>
+                                    <option value="입장료">입장료</option>
+                                    <option value="기타">기타</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="export-payment-method" class="form-label">결제수단</label>
+                                <select class="form-select" id="export-payment-method">
+                                    <option value="">전체</option>
+                                    <option value="현금">현금</option>
+                                    <option value="체크카드">체크카드</option>
+                                    <option value="신용카드">신용카드</option>
+                                    <option value="교통카드">교통카드</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="export-date-from" class="form-label">시작 날짜</label>
+                                <input type="date" class="form-control" id="export-date-from">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="export-date-to" class="form-label">종료 날짜</label>
+                                <input type="date" class="form-control" id="export-date-to">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">파일 형식</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="export-format" id="format-csv" value="csv" checked>
+                                        <label class="form-check-label" for="format-csv">
+                                            <i class="fas fa-file-csv me-2"></i>CSV 파일
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="export-format" id="format-excel" value="excel">
+                                        <label class="form-check-label" for="format-excel">
+                                            <i class="fas fa-file-excel me-2"></i>Excel 파일
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <small>필터를 설정하지 않으면 모든 지출 데이터가 내보내집니다.</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-success" onclick="exportFilteredData()">
+                        <i class="fas fa-download me-2"></i>
+                        <span id="export-btn-text">내보내기</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 지출 내역 상세 모달 -->
+    <div class="modal fade" id="expenseDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-list me-2"></i><span id="modalDateTitle">일별 지출 내역</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modalExpenseList">
+                        <!-- 지출 내역이 여기에 동적으로 로드됩니다 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="me-auto">
+                        <strong>총 지출: <span id="modalTotalAmount">₩0</span></strong>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="/static/js/jquery-3.6.0.min.js"></script>
+    <!-- Chart.js -->
+    <script src="/static/js/chart.min.js"></script>
+    
+    <!-- User data for JavaScript -->
+    <script>
+        window.currentUser = {% if user %}{{ user.telegram_chat_id | tojson }}{% else %}null{% endif %};
+    </script>
+    
+    <!-- Custom Statistics JS -->
+    <script src="/static/js/statistics.js"></script>
+</body>
+</html>

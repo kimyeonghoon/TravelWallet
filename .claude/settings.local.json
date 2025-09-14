@@ -42,7 +42,11 @@
       "Bash(git cherry-pick:*)",
       "Bash(gh auth:*)",
       "Bash(lsof:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(npm:*)",
+      "Bash(npx cap init:*)",
+      "Bash(npx cap add:*)",
+      "Bash(npx cap:*)"
     ],
     "deny": [],
     "ask": []

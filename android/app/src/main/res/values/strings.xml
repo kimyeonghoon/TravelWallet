@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Japan Travel Expense</string>
+    <string name="title_activity_main">Japan Travel Expense</string>
+    <string name="package_name">com.travel.expense</string>
+    <string name="custom_url_scheme">com.travel.expense</string>
+</resources>

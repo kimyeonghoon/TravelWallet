@@ -171,6 +171,11 @@ $(document).ready(function() {
         if (filters.sort_by) params.append('sort_by', filters.sort_by);
         if (filters.sort_order) params.append('sort_order', filters.sort_order);
         if (filters.search) params.append('search', filters.search);
+
+        // 여행 필터링: 현재 선택된 여행이 있으면 적용
+        if (currentTrip) {
+            params.append('trip_id', currentTrip.id);
+        }
         
         // Add cache busting
         params.append('_t', new Date().getTime());
@@ -255,12 +260,26 @@ $(document).ready(function() {
     
     // Update summary cards from API
     function updateSummary() {
+        // 요약 정보에 현재 선택된 여행 필터 적용
+        const params = new URLSearchParams();
+        if (currentTrip) {
+            params.append('trip_id', currentTrip.id);
+        }
+        params.append('_t', new Date().getTime()); // Cache busting
+
         $.ajax({
-            url: '/api/summary?' + new Date().getTime(), // Cache busting
+            url: '/api/summary?' + params.toString(),
             method: 'GET',
             success: function(summary) {
+                const tripText = currentTrip ? ` (${currentTrip.name})` : '';
                 $('#total-expense').text(`₩${summary.total_expense.toLocaleString()}`);
                 $('#today-expense').text(`₩${summary.today_expense.toLocaleString()}`);
+
+                // 여행별 요약 정보 표시 업데이트
+                const $totalCard = $('#total-expense').closest('.card-body');
+                const $todayCard = $('#today-expense').closest('.card-body');
+                $totalCard.find('.card-title').text(`총 지출${tripText}`);
+                $todayCard.find('.card-title').text(`오늘 지출${tripText}`);
             },
             error: function(xhr, status, error) {
                 console.error('Error loading summary:', error);

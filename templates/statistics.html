@@ -362,6 +362,31 @@
         </div>
     </div>
 
+    <!-- 지출 내역 상세 모달 -->
+    <div class="modal fade" id="expenseDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-list me-2"></i><span id="modalDateTitle">일별 지출 내역</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modalExpenseList">
+                        <!-- 지출 내역이 여기에 동적으로 로드됩니다 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="me-auto">
+                        <strong>총 지출: <span id="modalTotalAmount">₩0</span></strong>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="/static/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->

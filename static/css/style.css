@@ -59,6 +59,7 @@ body {
 .calendar-day.has-expense {
     background-color: #fff3cd;
     border-left: 4px solid #ffc107;
+    cursor: pointer;
 }
 
 .day-number {
@@ -72,6 +73,35 @@ body {
     color: #dc3545;
     font-weight: bold;
     text-align: left;
+}
+
+/* 지출 내역 모달 스타일 */
+.expense-detail-item {
+    transition: background-color 0.2s ease;
+}
+
+.expense-detail-item:hover {
+    background-color: #f8f9fa !important;
+}
+
+.expense-icon {
+    width: 60px;
+    text-align: center;
+}
+
+.expense-info h6 {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.expense-amount {
+    text-align: right;
+    min-width: 120px;
+}
+
+#expenseDetailModal .modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
 }
 
 @media (max-width: 768px) {
@@ -91,6 +121,18 @@ body {
     .calendar-header {
         padding: 8px 3px;
         font-size: 0.8rem;
+    }
+
+    .expense-detail-item .row {
+        --bs-gutter-x: 0.5rem;
+    }
+
+    .expense-icon {
+        width: 50px;
+    }
+
+    .expense-amount {
+        min-width: 100px;
     }
 }
 

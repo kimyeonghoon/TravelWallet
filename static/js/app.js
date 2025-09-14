@@ -942,4 +942,180 @@ $(document).ready(function() {
             }
         }
     }
+
+    // ==================== 모바일 터치 제스처 기능 ====================
+
+    // 터치 제스처 초기화
+    function initTouchGestures() {
+        // 하단 네비게이션 활성 상태 관리
+        updateBottomNavActive();
+
+        // 터치 피드백 효과
+        initTouchFeedback();
+
+        // 스와이프 제스처
+        initSwipeGestures();
+    }
+
+    // 하단 네비게이션 활성 상태 업데이트
+    function updateBottomNavActive() {
+        const currentPath = window.location.pathname;
+        $('.bottom-nav-item').removeClass('active');
+
+        $('.bottom-nav-item').each(function() {
+            const href = $(this).attr('href');
+            if (href === currentPath || (currentPath === '/' && href === '/')) {
+                $(this).addClass('active');
+            }
+        });
+    }
+
+    // 터치 피드백 효과 초기화
+    function initTouchFeedback() {
+        $(document).on('touchstart', '.touch-feedback, .btn, .bottom-nav-item', function(e) {
+            const $element = $(this);
+            $element.addClass('active');
+
+            setTimeout(function() {
+                $element.removeClass('active');
+            }, 600);
+        });
+    }
+
+    // 스와이프 제스처 초기화
+    function initSwipeGestures() {
+        let startX, startY, startTime;
+        let isSwipping = false;
+
+        $(document).on('touchstart', '.swipe-container', function(e) {
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            startTime = Date.now();
+            isSwipping = false;
+        });
+
+        $(document).on('touchmove', '.swipe-container', function(e) {
+            if (!startX || !startY) return;
+
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - startX;
+            const deltaY = touch.clientY - startY;
+
+            // 수평 스와이프인지 확인
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+                isSwipping = true;
+                e.preventDefault();
+
+                const $item = $(this).find('.swipe-item');
+                $item.addClass('swiping');
+
+                // 스와이프 범위 제한
+                const maxSwipe = -80;
+                const swipeDistance = Math.max(deltaX, maxSwipe);
+
+                $item.css('transform', `translateX(${swipeDistance}px)`);
+
+                // 스와이프 액션 표시
+                if (swipeDistance < -40) {
+                    $item.addClass('show-actions');
+                } else {
+                    $item.removeClass('show-actions');
+                }
+            }
+        });
+
+        $(document).on('touchend', '.swipe-container', function(e) {
+            if (!isSwipping) return;
+
+            const $item = $(this).find('.swipe-item');
+            const currentTransform = $item.css('transform');
+            const matrix = new DOMMatrix(currentTransform);
+            const currentX = matrix.m41;
+
+            $item.removeClass('swiping');
+
+            // 스와이프 거리에 따른 액션
+            if (currentX < -40) {
+                // 스와이프 액션 유지
+                $item.css('transform', 'translateX(-80px)');
+                $item.addClass('show-actions');
+            } else {
+                // 원위치로 복귀
+                $item.css('transform', 'translateX(0px)');
+                $item.removeClass('show-actions');
+            }
+
+            startX = startY = null;
+            isSwipping = false;
+        });
+
+        // 스와이프 외부 클릭 시 닫기
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.swipe-container').length) {
+                $('.swipe-item').css('transform', 'translateX(0px)');
+                $('.swipe-item').removeClass('show-actions');
+            }
+        });
+    }
+
+    // Pull to refresh 기능
+    function initPullToRefresh() {
+        let startY = 0;
+        let isPulling = false;
+        const pullThreshold = 80;
+
+        $(document).on('touchstart', function(e) {
+            if (window.pageYOffset === 0) {
+                startY = e.touches[0].clientY;
+            }
+        });
+
+        $(document).on('touchmove', function(e) {
+            if (startY === 0) return;
+
+            const currentY = e.touches[0].clientY;
+            const pullDistance = currentY - startY;
+
+            if (pullDistance > 0 && window.pageYOffset === 0) {
+                isPulling = true;
+                e.preventDefault();
+
+                // 시각적 피드백
+                if (pullDistance > pullThreshold) {
+                    $('body').addClass('pull-ready');
+                } else {
+                    $('body').removeClass('pull-ready');
+                }
+            }
+        });
+
+        $(document).on('touchend', function(e) {
+            if (!isPulling) return;
+
+            const pullDistance = e.changedTouches[0].clientY - startY;
+
+            if (pullDistance > pullThreshold) {
+                // 새로고침 실행
+                location.reload();
+            }
+
+            $('body').removeClass('pull-ready');
+            isPulling = false;
+            startY = 0;
+        });
+    }
+
+    // 모바일 최적화 기능 초기화
+    if (window.innerWidth <= 768) {
+        initTouchGestures();
+        initPullToRefresh();
+    }
+
+    // 화면 크기 변경 시 재초기화
+    $(window).on('resize', function() {
+        if (window.innerWidth <= 768) {
+            initTouchGestures();
+        }
+    });
 });

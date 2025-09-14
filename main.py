@@ -430,8 +430,27 @@ async def get_expenses(
     else:
         # Use existing method for backward compatibility
         expenses = ExpenseService.get_all_expenses(db)
-    
+
     return [ExpenseResponse(**expense.to_dict()) for expense in expenses]
+
+@app.get("/api/expenses/by-date/{date}")
+async def get_expenses_by_date(
+    date: str,
+    db: Session = Depends(get_db)
+):
+    """Get expenses for a specific date - public access for expense viewing."""
+    try:
+        # Use existing filtered method with date range
+        expenses = ExpenseService.get_filtered_expenses(
+            db=db,
+            date_from=date,
+            date_to=date,
+            sort_by="created_at",
+            sort_order="desc"
+        )
+        return [ExpenseResponse(**expense.to_dict()) for expense in expenses]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.put("/api/expenses/{expense_id}", response_model=ExpenseResponse)
 async def update_expense(expense_id: int, expense_update: ExpenseUpdate, current_user: User = Depends(require_auth), db: Session = Depends(get_db)):

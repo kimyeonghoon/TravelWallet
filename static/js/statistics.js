@@ -39,7 +39,7 @@ $(document).ready(function() {
     function createCharts(data) {
         createCategoryChart(data.category_stats);
         createPaymentChart(data.payment_method_stats);
-        createDailyChart(data.daily_stats);
+        createExpenseCalendar(data.daily_stats);
         createWeeklyChart(data.weekly_stats);
     }
     
@@ -134,58 +134,97 @@ $(document).ready(function() {
         });
     }
     
-    function createDailyChart(dailyStats) {
-        const ctx = document.getElementById('dailyChart').getContext('2d');
-        
-        const dates = dailyStats.map(item => {
-            const date = new Date(item.date);
-            return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+    // 달력형 지출 조회 기능
+    let currentDate = new Date();
+    let expenseData = {};
+
+    function createExpenseCalendar(dailyStats) {
+        // 일별 통계 데이터를 객체로 변환
+        expenseData = {};
+        dailyStats.forEach(item => {
+            expenseData[item.date] = item.amount;
         });
-        const amounts = dailyStats.map(item => item.amount);
-        
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [{
-                    label: '일별 지출',
-                    data: amounts,
-                    borderColor: '#36A2EB',
-                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#36A2EB',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '₩' + value.toLocaleString();
-                            }
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `지출: ₩${context.parsed.y.toLocaleString()}`;
-                            }
-                        }
-                    }
+
+        // 현재 날짜를 오늘로 설정
+        currentDate = new Date();
+
+        renderCalendar();
+        bindCalendarEvents();
+    }
+
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        // 월 표시 업데이트
+        $('#currentMonth').text(`${year}년 ${month + 1}월`);
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+        const calendarHtml = generateCalendarHTML(year, month, startDate, lastDay);
+        $('#calendarContainer').html(calendarHtml);
+    }
+
+    function generateCalendarHTML(year, month, startDate, lastDay) {
+        let html = '<div class="calendar-grid">';
+
+        // 요일 헤더
+        const dayHeaders = ['일', '월', '화', '수', '목', '금', '토'];
+        dayHeaders.forEach(day => {
+            html += `<div class="calendar-header">${day}</div>`;
+        });
+
+        const currentDate = new Date(startDate);
+        const today = new Date();
+
+        for (let week = 0; week < 6; week++) {
+            for (let day = 0; day < 7; day++) {
+                const dateStr = currentDate.toISOString().split('T')[0];
+                const dayNum = currentDate.getDate();
+                const isCurrentMonth = currentDate.getMonth() === month;
+                const isToday = currentDate.toDateString() === today.toDateString();
+                const hasExpense = expenseData[dateStr];
+
+                let classes = ['calendar-day'];
+                if (!isCurrentMonth) classes.push('other-month');
+                if (isToday) classes.push('today');
+                if (hasExpense) classes.push('has-expense');
+
+                html += `<div class="${classes.join(' ')}" data-date="${dateStr}">`;
+                html += `<div class="day-number">${dayNum}</div>`;
+                if (hasExpense && isCurrentMonth) {
+                    html += `<div class="day-expense">₩${hasExpense.toLocaleString()}</div>`;
                 }
+                html += '</div>';
+
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function bindCalendarEvents() {
+        $('#prevMonth').off('click').on('click', function() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        $('#nextMonth').off('click').on('click', function() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        // 달력 셀 클릭 이벤트 (향후 확장 가능)
+        $(document).off('click', '.calendar-day').on('click', '.calendar-day', function() {
+            const date = $(this).data('date');
+            if (expenseData[date]) {
+                // 해당 날짜의 지출 상세 정보 표시 (향후 구현)
+                console.log(`${date}: ₩${expenseData[date].toLocaleString()}`);
             }
         });
     }

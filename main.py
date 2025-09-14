@@ -308,16 +308,18 @@ async def require_auth(current_user: User = Depends(get_current_user)) -> User:
         raise HTTPException(status_code=401, detail="Authentication required")
     return current_user
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def read_root(
-    request: Request, 
+    request: Request,
     current_user: Optional[User] = Depends(get_current_user)
 ):
     """Main page accessible to all users, with login features for authenticated users."""
-    return templates.TemplateResponse("index.html", {
+    response = templates.TemplateResponse("index.html", {
         "request": request,
         "user": current_user
     })
+    response.headers["Content-Type"] = "text/html; charset=utf-8"
+    return response
 
 @app.get("/statistics", response_class=HTMLResponse)
 async def statistics_page(
@@ -372,7 +374,13 @@ async def serve_static_files(file_path: str):
     mime_type, _ = mimetypes.guess_type(full_path)
     if mime_type is None:
         mime_type = "application/octet-stream"
-    
+
+    # Add charset for JavaScript and CSS files
+    if file_path.endswith('.js'):
+        mime_type = "text/javascript; charset=utf-8"
+    elif file_path.endswith('.css'):
+        mime_type = "text/css; charset=utf-8"
+
     return FileResponse(
         path=full_path,
         media_type=mime_type,

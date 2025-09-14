@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#007bff">
-    <title>엔화 지갑 관리 - Japan Travel Expense</title>
+    <title>엔화 지갑 관리 - 트래블 월렛</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-awesome.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
@@ -43,7 +43,7 @@
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
             <div class="container">
                 <a class="navbar-brand" href="/">
-                    <i class="fas fa-yen-sign me-2"></i>일본 여행 경비
+                    <i class="fas fa-wallet me-2"></i>트래블 월렛
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
@@ -66,21 +66,10 @@
                             <a class="nav-link active" href="/wallets"><i class="fas fa-wallet me-1"></i>엔화지갑</a>
                         </li>
                         {% if user %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fab fa-telegram-plane me-1"></i>{{ user.telegram_chat_id }}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="logout-btn">
+                                <i class="fas fa-sign-out-alt me-1"></i>로그아웃
                             </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" id="logout-btn">
-                                    <i class="fas fa-sign-out-alt me-2"></i>로그아웃
-                                </a></li>
-                            </ul>
-                        </li>
-                        {% else %}
-                        <li class="nav-item d-flex align-items-center">
-                            <button class="btn btn-gradient-primary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#loginModal">
-                                <i class="fab fa-telegram-plane me-1"></i>로그인
-                            </button>
                         </li>
                         {% endif %}
                     </ul>

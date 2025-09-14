@@ -1106,8 +1106,43 @@ $(document).ready(function() {
         });
     }
 
+    // 하단 네비게이션 HTML 동적 생성
+    function createBottomNavigation() {
+        if ($('.bottom-nav').length > 0) return; // 이미 존재하면 생성하지 않음
+
+        const bottomNavHtml = `
+            <nav class="bottom-nav">
+                <div class="bottom-nav-container">
+                    <a href="/" class="bottom-nav-item">
+                        <i class="fas fa-home"></i>
+                        <span>홈</span>
+                    </a>
+                    <a href="/statistics" class="bottom-nav-item">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>통계</span>
+                    </a>
+                    <a href="/transport-cards" class="bottom-nav-item">
+                        <i class="fas fa-subway"></i>
+                        <span>교통카드</span>
+                    </a>
+                    <a href="/transportation" class="bottom-nav-item">
+                        <i class="fas fa-train"></i>
+                        <span>교통수단</span>
+                    </a>
+                    <a href="/wallets" class="bottom-nav-item">
+                        <i class="fas fa-wallet"></i>
+                        <span>지갑</span>
+                    </a>
+                </div>
+            </nav>
+        `;
+
+        $('body').append(bottomNavHtml);
+    }
+
     // 모바일 최적화 기능 초기화
     if (window.innerWidth <= 768) {
+        createBottomNavigation(); // 하단 네비게이션 생성
         initTouchGestures();
         initPullToRefresh();
     }
@@ -1115,7 +1150,11 @@ $(document).ready(function() {
     // 화면 크기 변경 시 재초기화
     $(window).on('resize', function() {
         if (window.innerWidth <= 768) {
+            createBottomNavigation(); // 하단 네비게이션 생성
             initTouchGestures();
+        } else {
+            // 데스크톱 모드일 때 하단 네비게이션 제거
+            $('.bottom-nav').remove();
         }
     });
 });

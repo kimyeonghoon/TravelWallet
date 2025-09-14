@@ -573,10 +573,11 @@ async def get_expenses(
     sort_by: Optional[str] = None,
     sort_order: Optional[str] = "desc",
     search: Optional[str] = None,
+    trip_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
     """Get expenses with optional filters and sorting - public access for expense viewing."""
-    if any([category, payment_method, date_from, date_to, sort_by, search]):
+    if any([category, payment_method, date_from, date_to, sort_by, search, trip_id]):
         # Use filtered query
         expenses = ExpenseService.get_filtered_expenses(
             db=db,
@@ -586,7 +587,8 @@ async def get_expenses(
             date_to=date_to,
             sort_by=sort_by,
             sort_order=sort_order,
-            search=search
+            search=search,
+            trip_id=trip_id
         )
     else:
         # Use existing method for backward compatibility
@@ -641,11 +643,11 @@ async def delete_expense(expense_id: int, current_user: User = Depends(require_a
     return {"message": "Expense deleted successfully"}
 
 @app.get("/api/summary", response_model=SummaryResponse)
-async def get_summary(db: Session = Depends(get_db)):
-    """Get expense summary - public access for viewing totals."""
-    total_expense = ExpenseService.get_total_expenses(db)
-    today_expense = ExpenseService.get_today_expenses_total(db)
-    
+async def get_summary(trip_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """Get expense summary with optional trip filtering - public access for viewing totals."""
+    total_expense = ExpenseService.get_total_expenses(db, trip_id)
+    today_expense = ExpenseService.get_today_expenses_total(db, trip_id)
+
     return SummaryResponse(
         total_expense=total_expense,
         today_expense=today_expense

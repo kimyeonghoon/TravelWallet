@@ -271,31 +271,38 @@ class ExpenseService:
         return db.query(Expense).filter(Expense.category == category).all()
     
     @staticmethod
-    def get_total_expenses(db: Session) -> float:
-        """Get total amount of all expenses."""
-        result = db.query(func.sum(Expense.amount)).scalar()
+    def get_total_expenses(db: Session, trip_id: Optional[int] = None) -> float:
+        """Get total amount of all expenses with optional trip filtering."""
+        query = db.query(func.sum(Expense.amount))
+        if trip_id:
+            query = query.filter(Expense.trip_id == trip_id)
+        result = query.scalar()
         return result if result else 0.0
     
     @staticmethod
-    def get_today_expenses_total(db: Session) -> float:
-        """Get total expenses for today."""
+    def get_today_expenses_total(db: Session, trip_id: Optional[int] = None) -> float:
+        """Get total expenses for today with optional trip filtering."""
         today = date.today().strftime("%Y-%m-%d")
-        result = db.query(func.sum(Expense.amount)).filter(Expense.date == today).scalar()
+        query = db.query(func.sum(Expense.amount)).filter(Expense.date == today)
+        if trip_id:
+            query = query.filter(Expense.trip_id == trip_id)
+        result = query.scalar()
         return result if result else 0.0
     
     @staticmethod
     def get_filtered_expenses(
-        db: Session, 
+        db: Session,
         category: Optional[str] = None,
         payment_method: Optional[str] = None,
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
         sort_by: Optional[str] = None,
         sort_order: Optional[str] = "desc",
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        trip_id: Optional[int] = None
     ) -> List[Expense]:
         """Get expenses with optional filters and sorting."""
-        query = db.query(Expense).options(selectinload(Expense.wallet))
+        query = db.query(Expense).options(selectinload(Expense.wallet), selectinload(Expense.trip))
         
         # Apply filters
         if category:
@@ -309,7 +316,10 @@ class ExpenseService:
         
         if date_to:
             query = query.filter(Expense.date <= date_to)
-        
+
+        if trip_id:
+            query = query.filter(Expense.trip_id == trip_id)
+
         # Apply search filter
         if search:
             search_term = f"%{search}%"

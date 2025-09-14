@@ -215,17 +215,69 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* 모바일 터치 최적화 */
 @media (max-width: 768px) {
     .container {
         padding: 0 10px;
     }
-    
+
     .card-body {
         padding: 1rem;
     }
-    
+
     .expense-item {
-        padding: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        min-height: 60px;
+    }
+
+    /* 터치 친화적 버튼 크기 */
+    .btn {
+        min-height: 48px;
+        padding: 12px 20px;
+        font-size: 1rem;
+        font-weight: 500;
+        border-radius: 8px;
+    }
+
+    .btn-sm {
+        min-height: 40px;
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+
+    .btn-lg {
+        min-height: 56px;
+        padding: 16px 24px;
+        font-size: 1.1rem;
+    }
+
+    /* 입력 필드 터치 최적화 */
+    .form-control, .form-select {
+        min-height: 48px;
+        padding: 12px 16px;
+        font-size: 1rem;
+        border-radius: 8px;
+    }
+
+    /* 네비게이션 터치 영역 확대 */
+    .nav-link {
+        padding: 12px 16px !important;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* 카드 터치 영역 개선 */
+    .card {
+        margin-bottom: 20px;
+    }
+
+    .card-header {
+        padding: 15px 20px;
+        min-height: 60px;
+        display: flex;
+        align-items: center;
     }
 }
 
@@ -265,4 +317,87 @@ body {
 .btn-gradient-primary:active {
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(102, 126, 234, 0.4);
+}
+
+/* 터치 제스처 및 스와이프 기능 */
+.swipe-container {
+    touch-action: pan-x;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.swipe-item {
+    transition: transform 0.3s ease-out;
+    position: relative;
+}
+
+.swipe-item.swiping {
+    transition: none;
+}
+
+.swipe-actions {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    background: #dc3545;
+    color: white;
+    padding: 0 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.swipe-item.show-actions .swipe-actions {
+    opacity: 1;
+}
+
+/* 터치 피드백 효과 */
+.touch-feedback {
+    position: relative;
+    overflow: hidden;
+}
+
+.touch-feedback::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.touch-feedback.active::before {
+    width: 200px;
+    height: 200px;
+}
+
+/* 모바일 네비게이션 최적화 */
+@media (max-width: 768px) {
+    .navbar-collapse {
+        background: white;
+        border-radius: 8px;
+        margin-top: 10px;
+        padding: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .navbar-nav .nav-item {
+        margin: 5px 0;
+    }
+
+    .navbar-nav .nav-link {
+        border-radius: 6px;
+        margin: 2px 0;
+        transition: background-color 0.2s ease;
+    }
+
+    .navbar-nav .nav-link:hover {
+        background-color: #f8f9fa;
+    }
 }

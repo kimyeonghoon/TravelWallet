@@ -261,3 +261,40 @@ export_*.xlsx
 
 # Requirements management file (temporary, not for production)
 REQUIREMENTS.md
+
+# Android development files
+android-sdk/
+~/android-sdk/
+android/.gradle/
+android/build/
+android/app/build/
+android/.idea/
+android/local.properties
+android/gradle.properties.local
+android/keystore.properties
+android/app/release/
+android/capacitor-android/.gradle/
+android/capacitor-android/build/
+android/capacitor-cordova-android-plugins/.gradle/
+android/capacitor-cordova-android-plugins/build/
+
+# Capacitor
+ios/
+electron/
+*.orig
+
+# Generated APK files
+*.apk
+*.aab
+*.ipa
+
+# Node.js dependencies (if using npm for capacitor)
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Gradle wrapper (keep gradlew, exclude generated files)
+.gradle/
+gradle/wrapper/gradle-wrapper.properties.temp

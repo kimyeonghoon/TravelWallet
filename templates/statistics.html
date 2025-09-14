@@ -173,11 +173,22 @@
                 <div class="row mb-4">
                     <div class="col-12 mb-4">
                         <div class="card">
-                            <div class="card-header">
-                                <h5><i class="fas fa-chart-line me-2"></i>일별 지출 추이</h5>
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5><i class="fas fa-calendar-alt me-2"></i>달력형 지출 조회</h5>
+                                <div class="d-flex align-items-center">
+                                    <button class="btn btn-outline-secondary btn-sm me-2" id="prevMonth">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <span id="currentMonth" class="fw-bold">2024년 1월</span>
+                                    <button class="btn btn-outline-secondary btn-sm ms-2" id="nextMonth">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="card-body">
-                                <canvas id="dailyChart" height="120"></canvas>
+                                <div id="calendarContainer" class="expense-calendar">
+                                    <!-- 달력이 여기에 동적으로 생성됩니다 -->
+                                </div>
                             </div>
                         </div>
                     </div>

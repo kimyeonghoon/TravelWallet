@@ -388,30 +388,6 @@ body {
     height: 200px;
 }
 
-/* 모바일 네비게이션 최적화 */
-@media (max-width: 768px) {
-    .navbar-collapse {
-        background: white;
-        border-radius: 8px;
-        margin-top: 10px;
-        padding: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .navbar-nav .nav-item {
-        margin: 5px 0;
-    }
-
-    .navbar-nav .nav-link {
-        border-radius: 6px;
-        margin: 2px 0;
-        transition: background-color 0.2s ease;
-    }
-
-    .navbar-nav .nav-link:hover {
-        background-color: #f8f9fa;
-    }
-}
 
 /* Pull to refresh 스타일 */
 .pull-ready {

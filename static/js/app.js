@@ -94,9 +94,15 @@ $(document).ready(function() {
         const description = $('#description').val();
         const paymentMethod = $('#payment-method').val();
         const walletId = $('#wallet-id').val();
-        
+        const tripId = $('#expense-trip-id').val();
+
         if (!amount || !category) {
-            showAlert('금액과 카테고리를 입력해주세요.', 'warning');
+            showAlert('금액과 카테곣0리를 입력해주세요.', 'warning');
+            return;
+        }
+
+        if (!tripId) {
+            showAlert('여행을 선택해주세요.', 'warning');
             return;
         }
         
@@ -120,6 +126,11 @@ $(document).ready(function() {
         // Add wallet_id only if selected
         if (walletId) {
             expenseData.wallet_id = parseInt(walletId);
+        }
+
+        // Add trip_id
+        if (tripId) {
+            expenseData.trip_id = parseInt(tripId);
         }
         
         // Show loading state
@@ -1163,12 +1174,14 @@ $(document).ready(function() {
             .done(function(trips) {
                 allTrips = trips;
                 updateTripSelect(trips);
+                updateExpenseTripSelect(trips);  // expense form 여행 선택 업데이트
 
                 // 기본 여행이 있으면 자동 선택
                 const defaultTrip = trips.find(trip => trip.is_default);
                 if (defaultTrip) {
                     currentTrip = defaultTrip;
                     $('#tripSelect').val(defaultTrip.id).trigger('change');
+                    $('#expense-trip-id').val(defaultTrip.id);  // expense form에도 기본 선택
                 }
             })
             .fail(function() {
@@ -1190,6 +1203,19 @@ $(document).ready(function() {
     }
 
     /**
+     * 지출 폼의 여행 선택 드롭다운을 업데이트합니다.
+     */
+    function updateExpenseTripSelect(trips) {
+        const $select = $('#expense-trip-id');
+        $select.empty().append('<option value="">여행을 선택해주세요...</option>');
+
+        trips.forEach(trip => {
+            const optionText = `${trip.name} (${trip.start_date} ~ ${trip.end_date})`;
+            $select.append(`<option value="${trip.id}">${optionText}</option>`);
+        });
+    }
+
+    /**
      * 여행 선택 이벤트 처리
      */
     function handleTripSelection() {
@@ -1200,12 +1226,18 @@ $(document).ready(function() {
             showTripInfo(currentTrip);
             enableTripActions(true);
 
+            // expense form에도 동일한 여행 선택
+            $('#expense-trip-id').val(tripId);
+
             // 선택된 여행에 따라 지출 내역 새로고침
             loadExpenses();
         } else {
             currentTrip = null;
             hideTripInfo();
             enableTripActions(false);
+
+            // expense form의 여행 선택도 초기화
+            $('#expense-trip-id').val('');
         }
     }
 

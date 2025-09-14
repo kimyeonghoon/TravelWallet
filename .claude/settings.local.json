@@ -18,7 +18,10 @@
       "Bash(lsof:*)",
       "Bash(journalctl:*)",
       "Bash(kill:*)",
-      "WebFetch(domain:japan.yeonghoon.kim)"
+      "WebFetch(domain:japan.yeonghoon.kim)",
+      "Bash(git reflog:*)",
+      "Bash(git gc:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

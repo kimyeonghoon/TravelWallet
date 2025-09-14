@@ -50,7 +50,12 @@ $(document).ready(function() {
 
         // 여행 관련 이벤트
         $('#tripSelect').on('change', handleTripSelection);       // 여행 선택
+
+        // 여행 추가 폼 이벤트 바인딩 (디버그 로그 포함)
+        console.log('Binding addTripForm submit event...');
         $('#addTripForm').on('submit', handleAddTrip);            // 여행 추가
+        console.log('addTripForm element found:', $('#addTripForm').length);
+
         $('#editTripForm').on('submit', handleEditTrip);          // 여행 수정
         $('#editTripBtn').on('click', showEditTripModal);         // 여행 수정 모달
         $('#deleteTripBtn').on('click', handleDeleteTrip);        // 여행 삭제
@@ -1289,6 +1294,7 @@ $(document).ready(function() {
      * 여행 추가 이벤트 처리
      */
     function handleAddTrip(e) {
+        console.log('handleAddTrip called');
         e.preventDefault();
 
         const tripData = {
@@ -1299,6 +1305,9 @@ $(document).ready(function() {
             description: $('#tripDescription').val()
         };
 
+        console.log('Trip data:', tripData);
+
+        console.log('Sending POST request to /api/trips');
         $.ajax({
             url: '/api/trips',
             method: 'POST',

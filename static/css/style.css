@@ -420,7 +420,7 @@ body {
 }
 
 /* 성능 최적화 - 하드웨어 가속 */
-.card, .btn, .expense-item, .bottom-nav-item {
+.card, .btn, .expense-item {
     transform: translateZ(0);
     backface-visibility: hidden;
 }
@@ -434,102 +434,3 @@ body {
     }
 }
 
-/* 모바일 하단 네비게이션 */
-.bottom-nav {
-    display: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    border-top: 1px solid #dee2e6;
-    z-index: 1050;
-    height: calc(70px + env(safe-area-inset-bottom));
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-    /* Safe Area 지원 */
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-}
-
-.bottom-nav-container {
-    display: flex;
-    height: 100%;
-    max-width: 100%;
-}
-
-.bottom-nav-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    color: #6c757d;
-    transition: color 0.2s ease;
-    padding: 8px 4px;
-    min-height: 48px;
-}
-
-.bottom-nav-item:hover,
-.bottom-nav-item.active {
-    color: #007bff;
-}
-
-.bottom-nav-item i {
-    font-size: 1.2rem;
-    margin-bottom: 4px;
-}
-
-.bottom-nav-item span {
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-@media (max-width: 768px) {
-    .bottom-nav {
-        display: block;
-    }
-
-    /* 상단 네비게이션 숨김 */
-    .navbar-nav {
-        display: none !important;
-    }
-
-    .navbar-toggler {
-        display: none;
-    }
-
-    /* Safe Area와 시스템 UI 고려한 바디 패딩 */
-    body {
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: calc(70px + env(safe-area-inset-bottom));
-        padding-left: env(safe-area-inset-left);
-        padding-right: env(safe-area-inset-right);
-    }
-
-    /* 상단 네비게이션 Safe Area 지원 */
-    .navbar {
-        padding-top: env(safe-area-inset-top);
-        padding-left: env(safe-area-inset-left);
-        padding-right: env(safe-area-inset-right);
-        /* Safe Area까지 네비게이션 색상 확장 */
-        position: relative;
-    }
-
-    .navbar::before {
-        content: '';
-        position: absolute;
-        top: calc(-1 * env(safe-area-inset-top));
-        left: 0;
-        right: 0;
-        height: env(safe-area-inset-top);
-        background-color: #007bff; /* 네비게이션과 같은 색상 */
-        z-index: -1;
-    }
-
-    /* 컨테이너 하단 여백 */
-    .container, .container-fluid {
-        margin-bottom: 20px;
-    }
-}

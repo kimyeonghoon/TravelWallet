@@ -127,7 +127,7 @@ $(document).ready(function() {
         }
 
         records.forEach(function(record) {
-            const isLoggedIn = $('nav .dropdown-toggle').length > 0; // 로그인 여부 확인
+            const isLoggedIn = $('#logout-btn').length > 0; // 로그인 여부 확인
             const actionButtons = isLoggedIn ? `
                 <div class="btn-group btn-group-sm">
                     <button class="btn btn-outline-primary edit-transportation" data-id="${record.id}" title="수정">

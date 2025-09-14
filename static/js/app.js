@@ -1299,8 +1299,12 @@ $(document).ready(function() {
             description: $('#tripDescription').val()
         };
 
-        $.post('/api/trips', tripData)
-            .done(function(newTrip) {
+        $.ajax({
+            url: '/api/trips',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(tripData),
+            success: function(newTrip) {
                 $('#addTripModal').modal('hide');
                 $('#addTripForm')[0].reset();
 
@@ -1308,11 +1312,12 @@ $(document).ready(function() {
                 loadTrips();
 
                 showAlert('성공', '여행이 성공적으로 추가되었습니다.', 'success');
-            })
-            .fail(function(xhr) {
+            },
+            error: function(xhr) {
                 const error = xhr.responseJSON?.detail || '여행 추가에 실패했습니다.';
                 showAlert('오류', error, 'danger');
-            });
+            }
+        });
     }
 
     /**
@@ -1403,17 +1408,21 @@ $(document).ready(function() {
     function handleSetDefaultTrip() {
         if (!currentTrip) return;
 
-        $.post(`/api/trips/${currentTrip.id}/set-default`)
-            .done(function() {
+        $.ajax({
+            url: `/api/trips/${currentTrip.id}/set-default`,
+            method: 'POST',
+            contentType: 'application/json',
+            success: function() {
                 // 여행 목록 새로고침
                 loadTrips();
 
                 showAlert('성공', `"${currentTrip.name}"이 기본 여행으로 설정되었습니다.`, 'success');
-            })
-            .fail(function(xhr) {
+            },
+            error: function(xhr) {
                 const error = xhr.responseJSON?.detail || '기본 여행 설정에 실패했습니다.';
                 showAlert('오류', error, 'danger');
-            });
+            }
+        });
     }
 
     // 모바일 최적화 기능 초기화

@@ -1,7 +1,21 @@
 $(document).ready(function() {
+    // 서버에서 받은 YYYY-MM-DD 문자열을 로컬 Date 객체로 변환
+    function parseLocalDate(dateString) {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    }
+
+    // Date 객체를 YYYY-MM-DD 형식 문자열(로컬 기준)로 변환
+    function toLocalDateString(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = ('0' + (dateObj.getMonth() + 1)).slice(-2);
+        const d = ('0' + dateObj.getDate()).slice(-2);
+        return `${y}-${m}-${d}`;
+    }
+
     // Initialize statistics dashboard
     loadStatistics();
-    
+
     function loadStatistics() {
         $.ajax({
             url: '/api/statistics',
@@ -11,8 +25,6 @@ $(document).ready(function() {
                 populateSummaryCards(data);
                 createCharts(data);
                 populateTopExpenses(data.top_expenses);
-                
-                // Hide loading and show content
                 $('#loading-state').hide();
                 $('#statistics-content').show();
             },
@@ -28,26 +40,25 @@ $(document).ready(function() {
             }
         });
     }
-    
+
     function populateSummaryCards(data) {
         $('#total-amount').text(`₩${data.total_amount.toLocaleString()}`);
         $('#expense-count').text(`${data.expense_count}건`);
         $('#avg-daily').text(`₩${data.avg_daily.toLocaleString()}`);
         $('#total-days').text(`${data.total_days}일`);
     }
-    
+
     function createCharts(data) {
         createCategoryChart(data.category_stats);
         createPaymentChart(data.payment_method_stats);
         createExpenseCalendar(data.daily_stats);
     }
-    
+
     function createCategoryChart(categoryStats) {
         const ctx = document.getElementById('categoryChart').getContext('2d');
-        
         const categories = Object.keys(categoryStats);
         const amounts = categories.map(cat => categoryStats[cat].amount);
-        
+
         const categoryNames = {
             'food': '식비',
             'transport': '교통비',
@@ -55,10 +66,9 @@ $(document).ready(function() {
             'admission': '입장료',
             'other': '기타'
         };
-        
         const labels = categories.map(cat => categoryNames[cat] || cat);
         const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
-        
+
         new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -74,9 +84,7 @@ $(document).ready(function() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
+                    legend: { position: 'bottom' },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
@@ -91,15 +99,14 @@ $(document).ready(function() {
             }
         });
     }
-    
+
     function createPaymentChart(paymentStats) {
         const ctx = document.getElementById('paymentChart').getContext('2d');
-        
         const methods = Object.keys(paymentStats);
         const amounts = methods.map(method => paymentStats[method].amount);
-        
+
         const colors = ['#FF9F40', '#FF6384', '#4BC0C0', '#36A2EB'];
-        
+
         new Chart(ctx, {
             type: 'pie',
             data: {
@@ -115,9 +122,7 @@ $(document).ready(function() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
+                    legend: { position: 'bottom' },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
@@ -132,21 +137,19 @@ $(document).ready(function() {
             }
         });
     }
-    
+
     // 달력형 지출 조회 기능
     let currentDate = new Date();
     let expenseData = {};
 
     function createExpenseCalendar(dailyStats) {
-        // 일별 통계 데이터를 객체로 변환
         expenseData = {};
         dailyStats.forEach(item => {
-            expenseData[item.date] = item.amount;
+            const localDate = parseLocalDate(item.date);
+            const localDateStr = toLocalDateString(localDate);
+            expenseData[localDateStr] = item.amount;
         });
-
-        // 현재 날짜를 오늘로 설정
         currentDate = new Date();
-
         renderCalendar();
         bindCalendarEvents();
     }
@@ -154,8 +157,6 @@ $(document).ready(function() {
     function renderCalendar() {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
-
-        // 월 표시 업데이트
         $('#currentMonth').text(`${year}년 ${month + 1}월`);
 
         const firstDay = new Date(year, month, 1);
@@ -169,8 +170,6 @@ $(document).ready(function() {
 
     function generateCalendarHTML(year, month, startDate, lastDay) {
         let html = '<div class="calendar-grid">';
-
-        // 요일 헤더
         const dayHeaders = ['일', '월', '화', '수', '목', '금', '토'];
         dayHeaders.forEach(day => {
             html += `<div class="calendar-header">${day}</div>`;
@@ -178,31 +177,26 @@ $(document).ready(function() {
 
         const currentDate = new Date(startDate);
         const today = new Date();
-
         for (let week = 0; week < 6; week++) {
             for (let day = 0; day < 7; day++) {
-                const dateStr = currentDate.toISOString().split('T')[0];
+                const dateStr = toLocalDateString(currentDate);
                 const dayNum = currentDate.getDate();
                 const isCurrentMonth = currentDate.getMonth() === month;
                 const isToday = currentDate.toDateString() === today.toDateString();
                 const hasExpense = expenseData[dateStr];
-
                 let classes = ['calendar-day'];
                 if (!isCurrentMonth) classes.push('other-month');
                 if (isToday) classes.push('today');
                 if (hasExpense) classes.push('has-expense');
-
                 html += `<div class="${classes.join(' ')}" data-date="${dateStr}">`;
                 html += `<div class="day-number">${dayNum}</div>`;
                 if (hasExpense && isCurrentMonth) {
                     html += `<div class="day-expense">₩${hasExpense.toLocaleString()}</div>`;
                 }
                 html += '</div>';
-
                 currentDate.setDate(currentDate.getDate() + 1);
             }
         }
-
         html += '</div>';
         return html;
     }
@@ -218,11 +212,10 @@ $(document).ready(function() {
             renderCalendar();
         });
 
-        // 달력 셀 클릭 이벤트 - 지출 내역 모달 표시
+        // 클릭 이벤트 - 모달 표시 (날짜 그대로 전달)
         $(document).off('click', '.calendar-day').on('click', '.calendar-day', function() {
             const date = $(this).data('date');
             const hasExpense = expenseData[date];
-
             if (hasExpense && $(this).hasClass('has-expense')) {
                 showExpenseDetailModal(date);
             }
@@ -230,7 +223,7 @@ $(document).ready(function() {
     }
 
     function showExpenseDetailModal(date) {
-        const formattedDate = new Date(date).toLocaleDateString('ko-KR', {
+        const formattedDate = parseLocalDate(date).toLocaleDateString('ko-KR', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
@@ -240,11 +233,9 @@ $(document).ready(function() {
         $('#modalExpenseList').html('<div class="text-center"><div class="spinner-border" role="status"></div><p class="mt-2">로딩 중...</p></div>');
         $('#modalTotalAmount').text('₩0');
 
-        // 모달 표시
         const modal = new bootstrap.Modal(document.getElementById('expenseDetailModal'));
         modal.show();
 
-        // API 호출로 해당 날짜의 지출 내역 조회
         $.ajax({
             url: `/api/expenses/by-date/${date}`,
             method: 'GET',
@@ -273,36 +264,30 @@ $(document).ready(function() {
             `);
             return;
         }
-
         let totalAmount = 0;
         let html = '<div class="expense-detail-list">';
-
+        const categoryNames = {
+            'food': '식비',
+            'transport': '교통비',
+            'accommodation': '숙박비',
+            'admission': '입장료',
+            'other': '기타'
+        };
+        const paymentNames = {
+            'cash': '현금',
+            'debit_card': '체크카드',
+            'credit_card': '신용카드',
+            'transport_card': '교통카드'
+        };
+        const categoryIcon = {
+            'food': 'fa-utensils',
+            'transport': 'fa-bus',
+            'accommodation': 'fa-bed',
+            'admission': 'fa-ticket-alt',
+            'other': 'fa-shopping-bag'
+        };
         expenses.forEach(expense => {
             totalAmount += expense.amount;
-
-            const categoryNames = {
-                'food': '식비',
-                'transport': '교통비',
-                'accommodation': '숙박비',
-                'admission': '입장료',
-                'other': '기타'
-            };
-
-            const paymentNames = {
-                'cash': '현금',
-                'debit_card': '체크카드',
-                'credit_card': '신용카드',
-                'transport_card': '교통카드'
-            };
-
-            const categoryIcon = {
-                'food': 'fa-utensils',
-                'transport': 'fa-bus',
-                'accommodation': 'fa-bed',
-                'admission': 'fa-ticket-alt',
-                'other': 'fa-shopping-bag'
-            };
-
             html += `
                 <div class="expense-detail-item mb-3 p-3 border rounded">
                     <div class="row align-items-center">
@@ -329,20 +314,17 @@ $(document).ready(function() {
                 </div>
             `;
         });
-
         html += '</div>';
         $('#modalExpenseList').html(html);
         $('#modalTotalAmount').text(`₩${totalAmount.toLocaleString()}`);
     }
-    
+
     function populateTopExpenses(topExpenses) {
         const container = $('#top-expenses-list');
-        
         if (!topExpenses || topExpenses.length === 0) {
             container.html('<p class="text-muted text-center">지출 데이터가 없습니다.</p>');
             return;
         }
-        
         const categoryNames = {
             'food': '식비',
             'transport': '교통비',
@@ -350,7 +332,6 @@ $(document).ready(function() {
             'admission': '입장료',
             'other': '기타'
         };
-        
         const categoryColors = {
             'food': 'success',
             'transport': 'primary',
@@ -358,12 +339,10 @@ $(document).ready(function() {
             'admission': 'warning',
             'other': 'info'
         };
-        
         let html = '';
         topExpenses.slice(0, 5).forEach((expense, index) => {
             const categoryName = categoryNames[expense.category] || expense.category;
             const badgeColor = categoryColors[expense.category] || 'secondary';
-            
             html += `
                 <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
                     <div>
@@ -379,7 +358,6 @@ $(document).ready(function() {
                 </div>
             `;
         });
-        
         container.html(html);
     }
     
